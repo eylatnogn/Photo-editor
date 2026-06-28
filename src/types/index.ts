@@ -65,20 +65,29 @@ export const DEFAULT_TRANSFORM: Transform = {
   crop: { x: 0, y: 0, width: 1, height: 1 },
 }
 
-export interface TextLayer {
+// Fields shared by every layer (for the layers panel + transforms).
+interface LayerBase {
   id: string
-  type: 'text'
-  text: string
   x: number // normalized 0..1 (center)
   y: number // normalized 0..1 (center)
+  rotation: number // degrees
+  opacity: number // 0..1
+  hidden?: boolean
+  locked?: boolean
+}
+
+export type TextStyle = 'plain' | 'cutout' | 'bubble'
+
+export interface TextLayer extends LayerBase {
+  type: 'text'
+  text: string
   fontSize: number // px relative to a 1000px reference width
   fontFamily: string
   color: string
   bold: boolean
   italic: boolean
   align: 'left' | 'center' | 'right'
-  opacity: number // 0..1
-  rotation: number // degrees
+  style: TextStyle
 }
 
 export interface DrawLayer {
@@ -88,9 +97,30 @@ export interface DrawLayer {
   size: number // brush size in source px
   points: Array<{ x: number; y: number }> // normalized 0..1
   opacity: number // 0..1
+  hidden?: boolean
+  locked?: boolean
 }
 
-export type Layer = TextLayer | DrawLayer
+// Decorative photo frames for image layers.
+export type ImageFrame = 'none' | 'white' | 'polaroid' | 'film' | 'tape'
+
+export interface ImageLayer extends LayerBase {
+  type: 'image'
+  src: string // data URL
+  scale: number // layer width as a fraction of the output width
+  naturalRatio: number // source width / height
+  frame: ImageFrame
+}
+
+export interface StickerLayer extends LayerBase {
+  type: 'sticker'
+  sticker: string // sticker id (see engine/stickers)
+  scale: number // size as a fraction of the output width
+  color: string
+  text?: string // for label-style stickers (e.g. location pin)
+}
+
+export type Layer = TextLayer | DrawLayer | ImageLayer | StickerLayer
 
 export interface FilterPreset {
   name: string
@@ -203,8 +233,10 @@ export type ToolId =
   | 'crop'
   | 'retouch'
   | 'text'
+  | 'sticker'
   | 'draw'
   | 'texture'
   | 'frame'
+  | 'layers'
   | 'ai'
   | 'export'

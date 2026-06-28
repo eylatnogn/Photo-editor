@@ -14,6 +14,8 @@ import { RetouchPanel } from './components/panels/RetouchPanel'
 import { TexturePanel } from './components/panels/TexturePanel'
 import { FramePanel } from './components/panels/FramePanel'
 import { TextPanel } from './components/panels/TextPanel'
+import { StickerPanel } from './components/panels/StickerPanel'
+import { LayersPanel } from './components/panels/LayersPanel'
 import { DrawPanel } from './components/panels/DrawPanel'
 import { AIPanel } from './components/panels/AIPanel'
 import { ExportPanel } from './components/panels/ExportPanel'
@@ -39,6 +41,10 @@ function ActivePanel() {
       return <FramePanel />
     case 'text':
       return <TextPanel />
+    case 'sticker':
+      return <StickerPanel />
+    case 'layers':
+      return <LayersPanel />
     case 'draw':
       return <DrawPanel />
     case 'ai':

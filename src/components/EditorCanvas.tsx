@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { renderDocument } from '../engine/render'
 import { magicErase, stampHeal, stampSmooth } from '../engine/retouch'
+import { hitLayer } from '../engine/layerGeometry'
+import { onImageLoad } from '../engine/imageCache'
+import { LayerTransform } from './LayerTransform'
+
+const LAYER_TOOLS = new Set(['text', 'sticker', 'layers'])
 import {
   createEmptyDocument,
   createFrame,
@@ -34,12 +39,11 @@ export function EditorCanvas() {
   const doc = useEditor((s) => s.doc)
   const showOriginal = useEditor((s) => s.showOriginal)
   const activeTool = useEditor((s) => s.activeTool)
-  const selectedLayerId = useEditor((s) => s.selectedLayerId)
 
   const live = useEditor((s) => s.live)
   const beginLive = useEditor((s) => s.beginLive)
   const endLive = useEditor((s) => s.endLive)
-  const updateLayer = useEditor((s) => s.updateLayer)
+  const selectLayer = useEditor((s) => s.selectLayer)
 
   const retouch = useEditor((s) => s.retouch)
   const retouchVersion = useEditor((s) => s.retouchVersion)
@@ -64,11 +68,10 @@ export function EditorCanvas() {
     orig: typeof doc.transform.crop
   } | null>(null)
   const drawingId = useRef<string | null>(null)
-  const textDrag = useRef<{
-    id: string
-    start: { x: number; y: number }
-    orig: { x: number; y: number }
-  } | null>(null)
+
+  // Re-render when a layer image finishes decoding.
+  const [imgTick, setImgTick] = useState(0)
+  useEffect(() => onImageLoad(() => setImgTick((t) => t + 1)), [])
 
   useEffect(() => {
     if (!source) {
@@ -113,7 +116,7 @@ export function EditorCanvas() {
       erase: retouch.erase,
     })
     fitCanvas()
-  }, [previewSource, doc, showOriginal, activeTool, retouch, retouchVersion])
+  }, [previewSource, doc, showOriginal, activeTool, retouch, retouchVersion, imgTick])
 
   // Size the canvas element (in CSS px) to fit the available stage while
   // preserving the image's aspect ratio. Done in JS because percentage-based
@@ -283,16 +286,21 @@ export function EditorCanvas() {
       return
     }
 
-    if (activeTool === 'text' && selectedLayerId) {
-      const layer = doc.layers.find((l) => l.id === selectedLayerId)
-      if (layer && layer.type === 'text') {
-        beginLive()
-        textDrag.current = {
-          id: layer.id,
-          start: n,
-          orig: { x: layer.x, y: layer.y },
+    // Layer tools: tap to select the topmost layer under the pointer (moving
+    // and transforming is handled by the on-canvas transform box).
+    if (LAYER_TOOLS.has(activeTool) && canvasRef.current) {
+      const cw = canvasRef.current.width
+      const ch = canvasRef.current.height
+      let hit: string | null = null
+      for (let i = doc.layers.length - 1; i >= 0; i--) {
+        const l = doc.layers[i]
+        if (l.hidden || l.locked) continue
+        if (hitLayer(l, n.x * cw, n.y * ch, cw, ch)) {
+          hit = l.id
+          break
         }
       }
+      selectLayer(hit)
     }
   }
 
@@ -343,14 +351,6 @@ export function EditorCanvas() {
       })
       return
     }
-
-    if (textDrag.current) {
-      const { id, orig, start } = textDrag.current
-      updateLayer(id, {
-        x: clamp(orig.x + (n.x - start.x), 0, 1),
-        y: clamp(orig.y + (n.y - start.y), 0, 1),
-      })
-    }
   }
 
   const onPointerUp = () => {
@@ -365,10 +365,6 @@ export function EditorCanvas() {
     }
     if (drawingId.current) {
       drawingId.current = null
-      endLive()
-    }
-    if (textDrag.current) {
-      textDrag.current = null
       endLive()
     }
   }
@@ -391,6 +387,7 @@ export function EditorCanvas() {
           onPointerCancel={onPointerUp}
         />
         {activeTool === 'crop' && <CropOverlay />}
+        <LayerTransform canvasRef={canvasRef} />
       </div>
     </div>
   )

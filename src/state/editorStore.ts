@@ -148,6 +148,8 @@ interface EditorState {
   addLayer: (layer: Layer) => void
   updateLayer: (id: string, patch: Partial<Layer>) => void
   removeLayer: (id: string) => void
+  moveLayer: (id: string, dir: 'up' | 'down') => void
+  duplicateLayer: (id: string) => void
 
   // --- ai ---
   setAI: (patch: Partial<AIState>) => void
@@ -390,6 +392,37 @@ export const useEditor = create<EditorState>((set, get) => ({
         doc: next,
         ...pushDoc(s, s.doc),
         selectedLayerId: s.selectedLayerId === id ? null : s.selectedLayerId,
+      }
+    }),
+
+  // Array order = z-order (later draws on top). 'up' = bring forward.
+  moveLayer: (id, dir) =>
+    set((s) => {
+      const next = clone(s.doc)
+      const i = next.layers.findIndex((l) => l.id === id)
+      if (i === -1) return {}
+      const j = dir === 'up' ? i + 1 : i - 1
+      if (j < 0 || j >= next.layers.length) return {}
+      ;[next.layers[i], next.layers[j]] = [next.layers[j], next.layers[i]]
+      return { doc: next, ...pushDoc(s, s.doc) }
+    }),
+
+  duplicateLayer: (id) =>
+    set((s) => {
+      const next = clone(s.doc)
+      const src = next.layers.find((l) => l.id === id)
+      if (!src) return {}
+      const copy = structuredClone(src)
+      copy.id = `${src.type}_${Date.now().toString(36)}_${next.layers.length}`
+      if (copy.type !== 'draw') {
+        copy.x = Math.min(0.95, copy.x + 0.04)
+        copy.y = Math.min(0.95, copy.y + 0.04)
+      }
+      next.layers.push(copy)
+      return {
+        doc: next,
+        ...pushDoc(s, s.doc),
+        selectedLayerId: copy.id,
       }
     }),
 

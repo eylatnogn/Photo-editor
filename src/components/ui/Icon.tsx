@@ -30,6 +30,16 @@ export type IconName =
   | 'sparkle'
   | 'wand'
   | 'scissors'
+  | 'sticker'
+  | 'layers'
+  | 'photo'
+  | 'eye'
+  | 'eyeOff'
+  | 'lock'
+  | 'unlock'
+  | 'chevronUp'
+  | 'chevronDown'
+  | 'copy'
 
 interface IconProps {
   name: IconName
@@ -209,6 +219,61 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="6.5" cy="7" r="2.2" />
       <circle cx="6.5" cy="17" r="2.2" />
       <path d="M8.4 8.3 20 16M8.4 15.7 20 8M8.4 8.3 13.5 12" />
+    </>
+  ),
+  sticker: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="9.2" cy="10" r="0.9" fill="currentColor" />
+      <circle cx="14.8" cy="10" r="0.9" fill="currentColor" />
+      <path d="M8.5 14a4 4 0 0 0 7 0" />
+    </>
+  ),
+  layers: (
+    <>
+      <path d="M12 3 21 8 12 13 3 8Z" />
+      <path d="M3 12l9 5 9-5" />
+      <path d="M3 16l9 5 9-5" opacity="0.5" />
+    </>
+  ),
+  photo: (
+    <>
+      <rect x="3" y="4.5" width="18" height="15" rx="2" />
+      <circle cx="8.5" cy="10" r="1.8" />
+      <path d="M21 16.5 15.5 11 5 19.5" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </>
+  ),
+  eyeOff: (
+    <>
+      <path d="M10.6 6.2A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.6M6.2 6.4A17 17 0 0 0 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4-.9" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="M3 3l18 18" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  unlock: (
+    <>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 7.5-2" />
+    </>
+  ),
+  chevronUp: <path d="M6 15l6-6 6 6" />,
+  chevronDown: <path d="M6 9l6 6 6-6" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
     </>
   ),
 }

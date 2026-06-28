@@ -461,6 +461,67 @@ input[type='range']::-moz-range-thumb {
 .grid-h { left: 0; right: 0; height: 1px; top: 33.33%; }
 .grid-h.second { top: 66.66%; }
 
+/* ---------- Layer transform box ---------- */
+.layer-transform {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.lt-box {
+  position: absolute;
+  pointer-events: auto;
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  cursor: move;
+  touch-action: none;
+}
+.lt-edge {
+  position: absolute;
+  inset: 0;
+}
+.lt-handle {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+}
+.lt-resize {
+  right: -13px;
+  bottom: -13px;
+  cursor: nwse-resize;
+  background: #fff;
+  border: 2px solid var(--accent);
+}
+.lt-rotate {
+  left: 50%;
+  top: -38px;
+  transform: translateX(-50%);
+}
+.lt-rotate::before {
+  content: '';
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  width: 1.5px;
+  height: 12px;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.lt-delete {
+  left: -13px;
+  top: -13px;
+  background: var(--danger);
+}
+
 /* ---------- Layers / text / draw ---------- */
 .layer-list {
   margin: 12px 0;
@@ -546,6 +607,82 @@ input[type='color'] {
 }
 .swatch.active {
   border-color: #fff;
+}
+
+/* ---------- Stickers ---------- */
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+.sticker-cell {
+  aspect-ratio: 1;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.12s;
+}
+.sticker-cell:hover {
+  border-color: var(--accent);
+}
+.sticker-thumb {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Layers list ---------- */
+.layer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 10px 0;
+}
+.lyr-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text);
+}
+.lyr-row.active {
+  border-color: var(--accent);
+}
+.lyr-name {
+  flex: 1;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+.lyr-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+}
+.lyr-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-2);
+}
+.lyr-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.lyr-btn.danger:hover {
+  color: var(--danger);
 }
 
 /* ---------- AI ---------- */

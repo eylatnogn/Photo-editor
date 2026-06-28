@@ -12,7 +12,9 @@ export const TOOLS: Array<{ id: ToolId; icon: IconName; label: string }> = [
   { id: 'texture', icon: 'texture', label: 'Texture' },
   { id: 'frame', icon: 'frame', label: 'Frame' },
   { id: 'text', icon: 'text', label: 'Text' },
+  { id: 'sticker', icon: 'sticker', label: 'Stickers' },
   { id: 'draw', icon: 'draw', label: 'Draw' },
+  { id: 'layers', icon: 'layers', label: 'Layers' },
   { id: 'ai', icon: 'ai', label: 'AI' },
   { id: 'export', icon: 'export', label: 'Export' },
 ]
@@ -37,7 +39,7 @@ export function Toolbar() {
             } else {
               setActiveTool(t.id)
             }
-            if (t.id !== 'text') selectLayer(null)
+            if (!['text', 'sticker', 'layers'].includes(t.id)) selectLayer(null)
           }}
           title={t.label}
         >

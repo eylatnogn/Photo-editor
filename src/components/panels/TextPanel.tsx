@@ -27,7 +27,7 @@ export function TextPanel() {
     const layer: TextLayer = {
       id: uid('text'),
       type: 'text',
-      text: 'Double-click to edit',
+      text: 'Your text',
       x: 0.5,
       y: 0.5,
       fontSize: 48,
@@ -38,6 +38,7 @@ export function TextPanel() {
       align: 'center',
       opacity: 1,
       rotation: 0,
+      style: 'plain',
     }
     addLayer(layer)
   }
@@ -81,6 +82,19 @@ export function TextPanel() {
             value={selected.text}
             onChange={(e) => updateLayer(selected.id, { text: e.target.value })}
           />
+
+          <label className="mini-label">Style</label>
+          <div className="row gap">
+            {(['plain', 'cutout', 'bubble'] as const).map((st) => (
+              <button
+                key={st}
+                className={selected.style === st ? 'btn chip active' : 'btn chip'}
+                onClick={() => updateLayer(selected.id, { style: st })}
+              >
+                {st === 'plain' ? 'Plain' : st === 'cutout' ? 'Cut-out' : 'Bubble'}
+              </button>
+            ))}
+          </div>
 
           <label className="mini-label">Font</label>
           <select

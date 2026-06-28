@@ -6,6 +6,7 @@ import type {
   Adjustments,
   EditorDocument,
   Layer,
+  TextLayer,
   TextureSettings,
   FrameSettings,
 } from '../types'
@@ -21,6 +22,8 @@ import {
   selectiveColorIsIdentity,
 } from './filters'
 import { getPreset } from './presets'
+import { getImage } from './imageCache'
+import { drawSticker } from './stickers'
 
 export type RenderSource =
   | HTMLImageElement
@@ -122,24 +125,31 @@ function drawLayers(
   // Font sizes in the data model are relative to a 1000px-wide reference.
   const scale = width / 1000
   for (const layer of layers) {
+    if (layer.hidden) continue
     if (layer.type === 'text') {
       ctx.save()
       ctx.globalAlpha = layer.opacity
       ctx.translate(layer.x * width, layer.y * height)
       if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180)
-      const px = layer.fontSize * scale
-      ctx.font = `${layer.italic ? 'italic ' : ''}${
-        layer.bold ? 'bold ' : ''
-      }${px}px ${layer.fontFamily}`
-      ctx.fillStyle = layer.color
-      ctx.textAlign = layer.align
-      ctx.textBaseline = 'middle'
-      const lines = layer.text.split('\n')
-      const lineHeight = px * 1.2
-      const startY = -((lines.length - 1) * lineHeight) / 2
-      lines.forEach((line, i) => {
-        ctx.fillText(line, 0, startY + i * lineHeight)
-      })
+      drawText(ctx, layer, scale)
+      ctx.restore()
+    } else if (layer.type === 'image') {
+      const img = getImage(layer.src)
+      if (!img) continue // re-renders once the image loads
+      ctx.save()
+      ctx.globalAlpha = layer.opacity
+      ctx.translate(layer.x * width, layer.y * height)
+      if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180)
+      const wpx = layer.scale * width
+      const hpx = wpx / layer.naturalRatio
+      drawFramedImage(ctx, img, wpx, hpx, layer.frame)
+      ctx.restore()
+    } else if (layer.type === 'sticker') {
+      ctx.save()
+      ctx.globalAlpha = layer.opacity
+      ctx.translate(layer.x * width, layer.y * height)
+      if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180)
+      drawSticker(ctx, layer.sticker, layer.scale * width, layer.color, layer.text)
       ctx.restore()
     } else if (layer.type === 'draw') {
       if (layer.points.length < 1) continue
@@ -165,6 +175,142 @@ function drawLayers(
       ctx.restore()
     }
   }
+}
+
+// ----- Text rendering (plain / magazine cut-out / bubble) -----
+const CUTOUT_PAPERS = ['#f4efe3', '#e9e2d0', '#ffffff', '#ddd6c4']
+
+function drawText(ctx: CanvasRenderingContext2D, layer: TextLayer, scale: number) {
+  const px = layer.fontSize * scale
+  const lines = layer.text.split('\n')
+
+  if (layer.style === 'plain') {
+    ctx.font = `${layer.italic ? 'italic ' : ''}${layer.bold ? 'bold ' : ''}${px}px ${layer.fontFamily}`
+    ctx.fillStyle = layer.color
+    ctx.textAlign = layer.align
+    ctx.textBaseline = 'middle'
+    const lh = px * 1.2
+    const startY = -((lines.length - 1) * lh) / 2
+    lines.forEach((line, i) => ctx.fillText(line, 0, startY + i * lh))
+    return
+  }
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const lh = layer.style === 'bubble' ? px * 1.25 : px * 1.4
+  const startY = -((lines.length - 1) * lh) / 2
+
+  lines.forEach((line, li) => {
+    const y = startY + li * lh
+    const chars = [...line]
+    if (layer.style === 'bubble') {
+      const d = px
+      const gap = px * 0.14
+      const total = chars.length * (d + gap) - gap
+      let cx = -total / 2 + d / 2
+      for (const ch of chars) {
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(cx, y, d / 2, 0, Math.PI * 2)
+        ctx.fill()
+        if (ch.trim()) {
+          ctx.fillStyle = layer.color
+          ctx.font = `800 ${px * 0.6}px ${layer.fontFamily}`
+          ctx.fillText(ch.toUpperCase(), cx, y)
+        }
+        cx += d + gap
+      }
+    } else {
+      // cut-out
+      ctx.font = `800 ${px}px Georgia, 'Times New Roman', serif`
+      const pad = px * 0.16
+      const widths = chars.map((c) => ctx.measureText(c).width)
+      const advances = widths.map((w) => w + pad * 2)
+      const total = advances.reduce((a, b) => a + b, 0)
+      let cx = -total / 2
+      chars.forEach((ch, i) => {
+        const aw = advances[i]
+        const cw = widths[i]
+        ctx.save()
+        ctx.translate(cx + aw / 2, y)
+        ctx.rotate((((i * 53) % 9) - 4) * 0.012)
+        if (ch.trim()) {
+          ctx.fillStyle = CUTOUT_PAPERS[i % CUTOUT_PAPERS.length]
+          ctx.fillRect(-cw / 2 - pad, -px * 0.62, cw + pad * 2, px * 1.24)
+          ctx.fillStyle = layer.color
+          ctx.fillText(ch, 0, 0)
+        }
+        ctx.restore()
+        cx += aw
+      })
+    }
+  })
+}
+
+// ----- Image-layer frames -----
+function drawFramedImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  w: number,
+  h: number,
+  frame: import('../types').ImageFrame,
+) {
+  const draw = () => ctx.drawImage(img, -w / 2, -h / 2, w, h)
+  if (frame === 'none') {
+    draw()
+    return
+  }
+  if (frame === 'white') {
+    const b = w * 0.04
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    draw()
+    return
+  }
+  if (frame === 'polaroid') {
+    const b = w * 0.05
+    const bottom = w * 0.22
+    ctx.fillStyle = '#fbfbf7'
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + b + bottom)
+    draw()
+    return
+  }
+  if (frame === 'tape') {
+    const b = w * 0.03
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    draw()
+    // two tape strips on the top corners
+    const tw = w * 0.3
+    const th = tw * 0.34
+    for (const sx of [-1, 1]) {
+      ctx.save()
+      ctx.translate((sx * w) / 2.4, -h / 2 - b)
+      ctx.rotate(sx * 0.5)
+      ctx.fillStyle = 'rgba(231,216,168,0.62)'
+      ctx.fillRect(-tw / 2, -th / 2, tw, th)
+      ctx.restore()
+    }
+    return
+  }
+  // film — 35mm strip look
+  const b = w * 0.12
+  ctx.fillStyle = '#0c0c0c'
+  ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+  draw()
+  ctx.fillStyle = 'rgba(245,245,245,0.9)'
+  const holeW = b * 0.5
+  const holeH = b * 0.34
+  const gap = holeW * 1.9
+  for (let x = -w / 2; x < w / 2 - holeW; x += gap) {
+    ctx.fillRect(x, -h / 2 - b * 0.7, holeW, holeH)
+    ctx.fillRect(x, h / 2 + b * 0.7 - holeH, holeW, holeH)
+  }
+  ctx.fillStyle = 'rgba(220,180,80,0.85)'
+  ctx.font = `${b * 0.42}px monospace`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('SCRL 400', -w / 2 + b * 0.2, -h / 2 - b * 0.35)
 }
 
 export interface RenderResult {
