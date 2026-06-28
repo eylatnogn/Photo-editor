@@ -563,6 +563,18 @@ input[type='color'] {
   margin-top: 10px;
   line-height: 1.4;
 }
+.hint.success {
+  color: #34c759;
+}
+.look-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+.look-chips .btn.chip {
+  font-size: 11px;
+}
 
 /* ---------- Selective color ---------- */
 .band-row {

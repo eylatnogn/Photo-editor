@@ -1,6 +1,17 @@
+import { useState } from 'react'
 import { useEditor } from '../../state/editorStore'
 import { removeImageBackground } from '../../ai/backgroundRemoval'
+import { interpretLook } from '../../ai/lookInterpreter'
 import type { RenderSource } from '../../engine/render'
+
+const LOOK_SUGGESTIONS = [
+  'Warm vintage film',
+  'Moody cinematic',
+  'Bright & airy',
+  'Soft pastel',
+  'Punchy & vibrant',
+  'Black & white noir',
+]
 
 function sourceToCanvas(src: RenderSource): HTMLCanvasElement {
   const w = src instanceof HTMLImageElement ? src.naturalWidth : src.width
@@ -56,6 +67,25 @@ export function AIPanel() {
   const setAI = useEditor((s) => s.setAI)
   const replaceSource = useEditor((s) => s.replaceSource)
   const commit = useEditor((s) => s.commit)
+  const [lookPrompt, setLookPrompt] = useState('')
+  const [lookMsg, setLookMsg] = useState<string | null>(null)
+  const [lookErr, setLookErr] = useState(false)
+
+  const applyLook = (text: string) => {
+    const prompt = text.trim()
+    if (!prompt || !source) return
+    const result = interpretLook(prompt)
+    if (!result) {
+      setLookErr(true)
+      setLookMsg(
+        "Couldn't read that look. Try words like warm, moody, vintage, vibrant, pastel, cinematic or black & white.",
+      )
+      return
+    }
+    commit(result.mutate)
+    setLookErr(false)
+    setLookMsg(`Applied: ${result.recognized.join(' · ')}`)
+  }
 
   const runRemoveBackground = async () => {
     if (!source || ai.processing) return
@@ -93,6 +123,51 @@ export function AIPanel() {
   return (
     <div className="panel">
       <h3 className="panel-title">AI Tools</h3>
+
+      <div className="ai-card">
+        <div className="ai-card-title">🎨 Enhance to a look</div>
+        <p className="hint">
+          Describe the vibe you want and the editor builds the look for you —
+          interpreted on-device, nothing is uploaded.
+        </p>
+        <textarea
+          className="text-input"
+          rows={2}
+          placeholder="e.g. warm vintage film, soft and dreamy…"
+          value={lookPrompt}
+          onChange={(e) => setLookPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              applyLook(lookPrompt)
+            }
+          }}
+        />
+        <div className="look-chips">
+          {LOOK_SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              className="btn chip"
+              onClick={() => {
+                setLookPrompt(s)
+                applyLook(s)
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <button
+          className="btn primary full"
+          onClick={() => applyLook(lookPrompt)}
+          disabled={!lookPrompt.trim()}
+        >
+          Apply look
+        </button>
+        {lookMsg && (
+          <p className={lookErr ? 'error-text' : 'hint success'}>{lookMsg}</p>
+        )}
+      </div>
 
       <div className="ai-card">
         <div className="ai-card-title">✨ Auto Enhance</div>
