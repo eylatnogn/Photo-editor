@@ -1,10 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { renderDocument } from '../engine/render'
-import { createEmptyDocument, type DrawLayer } from '../types'
+import { magicErase, paintAirbrush, stampHeal } from '../engine/retouch'
+import {
+  createEmptyDocument,
+  createFrame,
+  DEFAULT_TRANSFORM,
+  type DrawLayer,
+  type EditorDocument,
+} from '../types'
 import { uid, clamp } from '../utils'
 
 const PREVIEW_MAX = 1600
+
+// Strip geometry (transform/frame/layers) so normalized pointer coordinates
+// map directly onto the source pixels — used by crop and retouch tools.
+function flattenDoc(doc: EditorDocument): EditorDocument {
+  return {
+    ...doc,
+    transform: { ...DEFAULT_TRANSFORM, crop: { ...DEFAULT_TRANSFORM.crop } },
+    frame: createFrame(),
+    layers: [],
+  }
+}
 
 type CropHandle =
   | 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'move' | null
@@ -22,10 +40,21 @@ export function EditorCanvas() {
   const endLive = useEditor((s) => s.endLive)
   const updateLayer = useEditor((s) => s.updateLayer)
 
+  const retouch = useEditor((s) => s.retouch)
+  const retouchVersion = useEditor((s) => s.retouchVersion)
+  const retouchTool = useEditor((s) => s.retouchTool)
+  const beginRetouch = useEditor((s) => s.beginRetouch)
+  const bumpRetouch = useEditor((s) => s.bumpRetouch)
+  const commitRetouch = useEditor((s) => s.commitRetouch)
+
   // Downscaled preview source for fast live rendering.
   const [previewSource, setPreviewSource] = useState<HTMLCanvasElement | null>(
     null,
   )
+  // Source sampled at retouch-layer resolution (for heal sampling / erase).
+  const sampleRef = useRef<HTMLCanvasElement | null>(null)
+  const retouching = useRef(false)
+  const lastPt = useRef<{ x: number; y: number } | null>(null)
 
   // Interaction refs (persist across re-renders during a drag).
   const cropDrag = useRef<{
@@ -57,24 +86,32 @@ export function EditorCanvas() {
       .getContext('2d')!
       .drawImage(source as CanvasImageSource, 0, 0, pc.width, pc.height)
     setPreviewSource(pc)
+
+    // Build a sample canvas matching the retouch-layer resolution.
+    const heal = useEditor.getState().retouch.heal
+    if (heal) {
+      const sc = document.createElement('canvas')
+      sc.width = heal.width
+      sc.height = heal.height
+      sc.getContext('2d')!.drawImage(source as CanvasImageSource, 0, 0, sc.width, sc.height)
+      sampleRef.current = sc
+    }
   }, [source])
 
-  // Re-render whenever the document or preview changes.
+  // Re-render whenever the document, preview, or retouch layers change.
   useEffect(() => {
     if (!previewSource || !canvasRef.current) return
-    const renderDoc =
-      activeTool === 'crop'
-        ? // Show the full, un-cropped, un-rotated frame while cropping.
-          {
-            ...doc,
-            transform: { ...createEmptyDocument().transform },
-            layers: [],
-          }
-        : showOriginal
-        ? createEmptyDocument()
-        : doc
-    renderDocument(previewSource, renderDoc, canvasRef.current)
-  }, [previewSource, doc, showOriginal, activeTool])
+    const flatten = activeTool === 'crop' || activeTool === 'retouch'
+    const renderDoc = flatten
+      ? flattenDoc(doc)
+      : showOriginal
+      ? createEmptyDocument()
+      : doc
+    renderDocument(previewSource, renderDoc, canvasRef.current, {
+      heal: retouch.heal,
+      erase: retouch.erase,
+    })
+  }, [previewSource, doc, showOriginal, activeTool, retouch, retouchVersion])
 
   const getNorm = (e: React.PointerEvent) => {
     const rect = canvasRef.current!.getBoundingClientRect()
@@ -112,10 +149,67 @@ export function EditorCanvas() {
     return null
   }
 
+  // Paint a cleanup/airbrush stroke onto the heal layer, interpolating
+  // between the previous and current point for smooth coverage.
+  const strokeRetouch = (n: { x: number; y: number }) => {
+    const heal = retouch.heal
+    const sample = sampleRef.current
+    if (!heal || !sample) return
+    const ctx = heal.getContext('2d')!
+    const w = heal.width
+    const h = heal.height
+    const radius = Math.max(3, (retouchTool.size / 1000) * Math.max(w, h))
+    const x = n.x * w
+    const y = n.y * h
+    const from = lastPt.current ?? { x, y }
+    const dist = Math.hypot(x - from.x, y - from.y)
+    const steps = Math.max(1, Math.floor(dist / (radius * 0.4)))
+    for (let i = 1; i <= steps; i++) {
+      const px = from.x + (x - from.x) * (i / steps)
+      const py = from.y + (y - from.y) * (i / steps)
+      if (retouchTool.mode === 'cleanup') {
+        stampHeal(ctx, sample, px, py, radius)
+      } else {
+        paintAirbrush(ctx, px, py, radius, retouchTool.color, retouchTool.hardness)
+      }
+    }
+    lastPt.current = { x, y }
+    bumpRetouch()
+  }
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (!previewSource) return
     ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
     const n = getNorm(e)
+
+    if (activeTool === 'retouch') {
+      const heal = retouch.heal
+      const erase = retouch.erase
+      if (!heal) return
+      beginRetouch()
+      if (retouchTool.mode === 'erase') {
+        const sample = sampleRef.current
+        if (sample && erase) {
+          const data = sample
+            .getContext('2d')!
+            .getImageData(0, 0, sample.width, sample.height)
+          magicErase(
+            erase.getContext('2d')!,
+            data,
+            n.x * erase.width,
+            n.y * erase.height,
+            retouchTool.tolerance,
+          )
+          bumpRetouch()
+        }
+        commitRetouch()
+      } else {
+        retouching.current = true
+        lastPt.current = null
+        strokeRetouch(n)
+      }
+      return
+    }
 
     if (activeTool === 'crop') {
       const handle = detectHandle(n.x, n.y)
@@ -162,6 +256,11 @@ export function EditorCanvas() {
   const onPointerMove = (e: React.PointerEvent) => {
     if (!previewSource) return
     const n = getNorm(e)
+
+    if (retouching.current && (e.buttons & 1)) {
+      strokeRetouch(n)
+      return
+    }
 
     if (cropDrag.current) {
       const { handle, orig, start } = cropDrag.current
@@ -212,6 +311,11 @@ export function EditorCanvas() {
   }
 
   const onPointerUp = () => {
+    if (retouching.current) {
+      retouching.current = false
+      lastPt.current = null
+      commitRetouch()
+    }
     if (cropDrag.current) {
       cropDrag.current = null
       endLive()
@@ -226,7 +330,10 @@ export function EditorCanvas() {
     }
   }
 
-  const cursor = activeTool === 'draw' || activeTool === 'crop' ? 'crosshair' : 'default'
+  const cursor =
+    activeTool === 'draw' || activeTool === 'crop' || activeTool === 'retouch'
+      ? 'crosshair'
+      : 'default'
 
   return (
     <div className="canvas-stage">

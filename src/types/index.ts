@@ -97,12 +97,89 @@ export interface FilterPreset {
   adjustments: Partial<Adjustments>
 }
 
+// ----- Premium: Selective Color (HSL) -----
+// Eight color bands, each with hue shift / saturation / luminance offsets.
+export const HSL_BANDS = [
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'aqua',
+  'blue',
+  'purple',
+  'magenta',
+] as const
+export type HslBand = (typeof HSL_BANDS)[number]
+
+export interface HslChannel {
+  h: number // -100..100 hue shift
+  s: number // -100..100 saturation
+  l: number // -100..100 luminance
+}
+
+export type SelectiveColor = Record<HslBand, HslChannel>
+
+export function createSelectiveColor(): SelectiveColor {
+  const out = {} as SelectiveColor
+  for (const b of HSL_BANDS) out[b] = { h: 0, s: 0, l: 0 }
+  return out
+}
+
+// ----- Premium: Tone Curves -----
+export interface CurvePoint {
+  x: number // 0..255 input
+  y: number // 0..255 output
+}
+export type CurveChannel = 'rgb' | 'r' | 'g' | 'b'
+export type Curves = Record<CurveChannel, CurvePoint[]>
+
+export function createCurves(): Curves {
+  const linear: CurvePoint[] = [
+    { x: 0, y: 0 },
+    { x: 255, y: 255 },
+  ]
+  return {
+    rgb: linear.map((p) => ({ ...p })),
+    r: linear.map((p) => ({ ...p })),
+    g: linear.map((p) => ({ ...p })),
+    b: linear.map((p) => ({ ...p })),
+  }
+}
+
+// ----- Premium: Texture overlays -----
+export type LeakStyle = 'warm' | 'sunset' | 'cool' | 'rainbow'
+export interface TextureSettings {
+  lightLeak: number // 0..100
+  leakStyle: LeakStyle
+  leakAngle: number // 0..360 which corner/side
+  dust: number // 0..100
+  bokeh: number // 0..100
+}
+export function createTexture(): TextureSettings {
+  return { lightLeak: 0, leakStyle: 'warm', leakAngle: 45, dust: 0, bokeh: 0 }
+}
+
+// ----- Premium: Borders & frames -----
+export type FrameType = 'none' | 'solid' | 'rounded' | 'film' | 'polaroid'
+export interface FrameSettings {
+  type: FrameType
+  size: number // 0..25 (percent of min dimension)
+  color: string
+}
+export function createFrame(): FrameSettings {
+  return { type: 'none', size: 6, color: '#ffffff' }
+}
+
 // A full, serializable description of an edit session.
 export interface EditorDocument {
   adjustments: Adjustments
   transform: Transform
   layers: Layer[]
   activeFilter: string | null
+  selectiveColor: SelectiveColor
+  curves: Curves
+  texture: TextureSettings
+  frame: FrameSettings
 }
 
 export function createEmptyDocument(): EditorDocument {
@@ -111,14 +188,23 @@ export function createEmptyDocument(): EditorDocument {
     transform: { ...DEFAULT_TRANSFORM, crop: { ...DEFAULT_TRANSFORM.crop } },
     layers: [],
     activeFilter: null,
+    selectiveColor: createSelectiveColor(),
+    curves: createCurves(),
+    texture: createTexture(),
+    frame: createFrame(),
   }
 }
 
 export type ToolId =
   | 'adjust'
   | 'filters'
+  | 'curves'
+  | 'selective'
   | 'crop'
+  | 'retouch'
   | 'text'
   | 'draw'
+  | 'texture'
+  | 'frame'
   | 'ai'
   | 'export'

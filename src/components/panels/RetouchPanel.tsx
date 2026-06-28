@@ -1,0 +1,127 @@
+import { useEditor } from '../../state/editorStore'
+import type { RetouchMode } from '../../state/editorStore'
+
+const MODES: Array<{ id: RetouchMode; label: string; icon: string; desc: string }> = [
+  {
+    id: 'cleanup',
+    label: 'Cleanup',
+    icon: '🩹',
+    desc: 'Brush over blemishes, spots or distractions to heal them using nearby texture.',
+  },
+  {
+    id: 'airbrush',
+    label: 'Airbrush',
+    icon: '💨',
+    desc: 'Soft, build-up brush for smoothing skin or painting soft color.',
+  },
+  {
+    id: 'erase',
+    label: 'Magic Eraser',
+    icon: '🪄',
+    desc: 'Tap an area to erase everything of a similar color (transparent). Great for clean backgrounds.',
+  },
+]
+
+const SWATCHES = ['#ffffff', '#000000', '#ffd9c2', '#ff3b30', '#34c759', '#007aff']
+
+export function RetouchPanel() {
+  const tool = useEditor((s) => s.retouchTool)
+  const setTool = useEditor((s) => s.setRetouchTool)
+  const clearRetouch = useEditor((s) => s.clearRetouch)
+  const undo = useEditor((s) => s.undo)
+  const hasRetouch = useEditor(
+    (s) => s.retouchPast.length > 0 || s.retouchVersion > 0,
+  )
+  const mode = MODES.find((m) => m.id === tool.mode)!
+
+  return (
+    <div className="panel">
+      <h3 className="panel-title">Retouch</h3>
+
+      <div className="mode-grid">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            className={tool.mode === m.id ? 'mode-cell active' : 'mode-cell'}
+            onClick={() => setTool({ mode: m.id })}
+          >
+            <span className="mode-icon">{m.icon}</span>
+            <span>{m.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <p className="hint">{mode.desc}</p>
+
+      {tool.mode !== 'erase' ? (
+        <>
+          <label className="mini-label">Brush size: {tool.size}</label>
+          <input
+            type="range"
+            min={4}
+            max={120}
+            value={tool.size}
+            onChange={(e) => setTool({ size: Number(e.target.value) })}
+          />
+
+          {tool.mode === 'airbrush' && (
+            <>
+              <label className="mini-label">
+                Softness: {Math.round(tool.hardness * 100)}%
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={tool.hardness}
+                onChange={(e) => setTool({ hardness: Number(e.target.value) })}
+              />
+              <label className="mini-label">Color</label>
+              <div className="swatches">
+                {SWATCHES.map((c) => (
+                  <button
+                    key={c}
+                    className={tool.color === c ? 'swatch active' : 'swatch'}
+                    style={{ background: c }}
+                    onClick={() => setTool({ color: c })}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={tool.color}
+                  onChange={(e) => setTool({ color: e.target.value })}
+                />
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <label className="mini-label">Tolerance: {tool.tolerance}</label>
+          <input
+            type="range"
+            min={5}
+            max={120}
+            value={tool.tolerance}
+            onChange={(e) => setTool({ tolerance: Number(e.target.value) })}
+          />
+          <p className="hint">
+            Higher tolerance erases a wider range of colors per tap.
+          </p>
+        </>
+      )}
+
+      <div className="row gap" style={{ marginTop: 12 }}>
+        <button className="btn" onClick={undo}>
+          ↶ Undo
+        </button>
+        {hasRetouch && (
+          <button className="btn ghost" onClick={clearRetouch}>
+            Clear retouch
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}

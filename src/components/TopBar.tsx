@@ -6,8 +6,8 @@ export function TopBar() {
   const hasImage = useEditor((s) => s.hasImage)
   const undo = useEditor((s) => s.undo)
   const redo = useEditor((s) => s.redo)
-  const past = useEditor((s) => s.past)
-  const future = useEditor((s) => s.future)
+  const canUndo = useEditor((s) => s.actionLog.length > 0)
+  const canRedo = useEditor((s) => s.actionRedo.length > 0)
   const resetEdits = useEditor((s) => s.resetEdits)
   const setShowOriginal = useEditor((s) => s.setShowOriginal)
   const loadImage = useEditor((s) => s.loadImage)
@@ -37,7 +37,7 @@ export function TopBar() {
             <button
               className="btn icon"
               onClick={undo}
-              disabled={past.length === 0}
+              disabled={!canUndo}
               title="Undo (Ctrl+Z)"
             >
               ↶
@@ -45,7 +45,7 @@ export function TopBar() {
             <button
               className="btn icon"
               onClick={redo}
-              disabled={future.length === 0}
+              disabled={!canRedo}
               title="Redo (Ctrl+Shift+Z)"
             >
               ↷

@@ -6,7 +6,12 @@ import { Toolbar, TOOLS } from './components/Toolbar'
 import { EditorCanvas } from './components/EditorCanvas'
 import { AdjustmentsPanel } from './components/panels/AdjustmentsPanel'
 import { FiltersPanel } from './components/panels/FiltersPanel'
+import { CurvesPanel } from './components/panels/CurvesPanel'
+import { SelectiveColorPanel } from './components/panels/SelectiveColorPanel'
 import { CropPanel } from './components/panels/CropPanel'
+import { RetouchPanel } from './components/panels/RetouchPanel'
+import { TexturePanel } from './components/panels/TexturePanel'
+import { FramePanel } from './components/panels/FramePanel'
 import { TextPanel } from './components/panels/TextPanel'
 import { DrawPanel } from './components/panels/DrawPanel'
 import { AIPanel } from './components/panels/AIPanel'
@@ -19,8 +24,18 @@ function ActivePanel() {
       return <AdjustmentsPanel />
     case 'filters':
       return <FiltersPanel />
+    case 'curves':
+      return <CurvesPanel />
+    case 'selective':
+      return <SelectiveColorPanel />
     case 'crop':
       return <CropPanel />
+    case 'retouch':
+      return <RetouchPanel />
+    case 'texture':
+      return <TexturePanel />
+    case 'frame':
+      return <FramePanel />
     case 'text':
       return <TextPanel />
     case 'draw':

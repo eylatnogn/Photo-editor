@@ -4,7 +4,12 @@ import type { ToolId } from '../types'
 export const TOOLS: Array<{ id: ToolId; icon: string; label: string }> = [
   { id: 'adjust', icon: '🎛️', label: 'Adjust' },
   { id: 'filters', icon: '🎨', label: 'Filters' },
+  { id: 'curves', icon: '📈', label: 'Curves' },
+  { id: 'selective', icon: '🎯', label: 'Color' },
   { id: 'crop', icon: '⤢', label: 'Crop' },
+  { id: 'retouch', icon: '🩹', label: 'Retouch' },
+  { id: 'texture', icon: '✴️', label: 'Texture' },
+  { id: 'frame', icon: '🖼️', label: 'Frame' },
   { id: 'text', icon: 'T', label: 'Text' },
   { id: 'draw', icon: '✎', label: 'Draw' },
   { id: 'ai', icon: '✨', label: 'AI' },

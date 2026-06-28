@@ -562,6 +562,98 @@ input[type='color'] {
   line-height: 1.4;
 }
 
+/* ---------- Selective color ---------- */
+.band-row {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 6px;
+}
+.band-chip {
+  flex: 1;
+  height: 30px;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+}
+.band-chip.active {
+  border-color: #fff;
+}
+.band-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.band-name {
+  text-transform: capitalize;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+/* ---------- Curves ---------- */
+.curve-editor {
+  width: 100%;
+  height: 240px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 12px 0;
+  touch-action: none;
+}
+.curve-grid {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.curve-diag {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+.curve-editor path {
+  vector-effect: non-scaling-stroke;
+}
+.curve-handle {
+  fill: var(--bg);
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  cursor: grab;
+}
+
+/* ---------- Retouch modes ---------- */
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.mode-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+}
+.mode-cell.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.mode-icon {
+  font-size: 20px;
+}
+
 /* ---------- Scrollbar ---------- */
 .sidebar::-webkit-scrollbar {
   width: 10px;
@@ -704,13 +796,21 @@ input[type='color'] {
     border-right: none;
     border-top: 1px solid var(--border);
     padding: 0;
-    justify-content: space-around;
+    /* Many tools: scroll horizontally instead of cramming. */
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
     flex: 0 0 auto;
+    scrollbar-width: none;
     /* keep clear of the home indicator / browser nav bar */
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
   }
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
   .tool {
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 62px;
     border-left: none;
     border-top: 2px solid transparent;
     padding: 8px 2px;

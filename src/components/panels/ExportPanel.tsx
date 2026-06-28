@@ -16,6 +16,7 @@ export function ExportPanel() {
   const source = useEditor((s) => s.source)
   const doc = useEditor((s) => s.doc)
   const fileName = useEditor((s) => s.fileName)
+  const retouch = useEditor((s) => s.retouch)
 
   const [format, setFormat] = useState<Format>('image/png')
   const [quality, setQuality] = useState(0.92)
@@ -26,9 +27,12 @@ export function ExportPanel() {
     if (!source || busy) return
     setBusy(true)
     try {
-      // Render at full source resolution.
+      // Render at full source resolution, including retouch layers.
       const out = document.createElement('canvas')
-      renderDocument(source, doc, out)
+      renderDocument(source, doc, out, {
+        heal: retouch.heal,
+        erase: retouch.erase,
+      })
 
       let finalCanvas = out
       if (scale !== 1) {

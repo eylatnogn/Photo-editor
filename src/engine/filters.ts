@@ -1,7 +1,8 @@
 // Pure pixel-processing routines. These operate directly on a
 // Uint8ClampedArray of RGBA data so they can run on any canvas ImageData.
 
-import type { Adjustments } from '../types'
+import type { Adjustments, Curves, SelectiveColor } from '../types'
+import { HSL_BANDS } from '../types'
 
 const clamp = (v: number, lo = 0, hi = 255) => (v < lo ? lo : v > hi ? hi : v)
 
@@ -194,6 +195,125 @@ export function applyAdjustments(data: Uint8ClampedArray, adj: Adjustments): voi
     data[i + 2] = clamp(b)
   }
 }
+
+// ---------- Tone Curves ----------
+
+// Build a 256-entry LUT from sorted control points via linear interpolation.
+function curveLUT(points: { x: number; y: number }[]): Uint8ClampedArray {
+  const lut = new Uint8ClampedArray(256)
+  const pts = [...points].sort((a, b) => a.x - b.x)
+  if (pts.length === 0) {
+    for (let i = 0; i < 256; i++) lut[i] = i
+    return lut
+  }
+  let seg = 0
+  for (let i = 0; i < 256; i++) {
+    while (seg < pts.length - 2 && i > pts[seg + 1].x) seg++
+    const a = pts[seg]
+    const b = pts[Math.min(seg + 1, pts.length - 1)]
+    if (i <= a.x) {
+      lut[i] = clamp(a.y)
+    } else if (i >= b.x) {
+      lut[i] = clamp(b.y)
+    } else {
+      const t = (i - a.x) / (b.x - a.x || 1)
+      lut[i] = clamp(a.y + (b.y - a.y) * t)
+    }
+  }
+  return lut
+}
+
+function isLinearCurve(points: { x: number; y: number }[]): boolean {
+  return (
+    points.length === 2 &&
+    points[0].x === 0 &&
+    points[0].y === 0 &&
+    points[1].x === 255 &&
+    points[1].y === 255
+  )
+}
+
+export function curvesAreIdentity(curves: Curves): boolean {
+  return (
+    isLinearCurve(curves.rgb) &&
+    isLinearCurve(curves.r) &&
+    isLinearCurve(curves.g) &&
+    isLinearCurve(curves.b)
+  )
+}
+
+export function applyCurves(data: Uint8ClampedArray, curves: Curves): void {
+  if (curvesAreIdentity(curves)) return
+  const lutRGB = curveLUT(curves.rgb)
+  const lutR = curveLUT(curves.r)
+  const lutG = curveLUT(curves.g)
+  const lutB = curveLUT(curves.b)
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = lutRGB[lutR[data[i]]]
+    data[i + 1] = lutRGB[lutG[data[i + 1]]]
+    data[i + 2] = lutRGB[lutB[data[i + 2]]]
+  }
+}
+
+// ---------- Selective Color (HSL per band) ----------
+
+// Hue centers (in 0..1) for each band, matching HSL_BANDS order.
+const BAND_CENTERS = [0, 30, 60, 120, 180, 240, 285, 315].map((d) => d / 360)
+
+export function selectiveColorIsIdentity(sc: SelectiveColor): boolean {
+  return HSL_BANDS.every((b) => sc[b].h === 0 && sc[b].s === 0 && sc[b].l === 0)
+}
+
+export function applySelectiveColor(
+  data: Uint8ClampedArray,
+  sc: SelectiveColor,
+): void {
+  if (selectiveColorIsIdentity(sc)) return
+  // Precompute active band adjustments.
+  const bands = HSL_BANDS.map((b, i) => ({
+    center: BAND_CENTERS[i],
+    h: sc[b].h,
+    s: sc[b].s,
+    l: sc[b].l,
+  }))
+
+  const hueDist = (a: number, b: number) => {
+    let d = Math.abs(a - b)
+    if (d > 0.5) d = 1 - d
+    return d
+  }
+
+  for (let i = 0; i < data.length; i += 4) {
+    let [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2])
+    let dh = 0
+    let ds = 0
+    let dl = 0
+    let wsum = 0
+    for (const band of bands) {
+      if (band.h === 0 && band.s === 0 && band.l === 0) continue
+      const dist = hueDist(h, band.center)
+      // Feather: full weight within ~1/12 of the wheel, fading to 1/6.
+      const w = Math.max(0, 1 - dist / (1 / 6))
+      if (w <= 0) continue
+      const weight = w * w * Math.min(1, s * 2.2) // less effect on greys
+      dh += band.h * weight
+      ds += band.s * weight
+      dl += band.l * weight
+      wsum += weight
+    }
+    if (wsum > 0) {
+      h = (h + (dh / 360) * 0.6 + 1) % 1
+      s = clamp01(s * (1 + ds / 120))
+      l = clamp01(l + (dl / 100) * 0.4)
+      const [r, g, b] = hslToRgb(h, s, l)
+      data[i] = clamp(r)
+      data[i + 1] = clamp(g)
+      data[i + 2] = clamp(b)
+    }
+  }
+}
+
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v)
 
 /**
  * Sharpen using a 3x3 convolution kernel. `amount` is 0..100.
