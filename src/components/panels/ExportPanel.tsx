@@ -3,6 +3,7 @@ import { useEditor } from '../../state/editorStore'
 import { renderDocument } from '../../engine/render'
 import { canvasToBlob } from '../../ai/backgroundRemoval'
 import { downloadBlob, stripExtension } from '../../utils'
+import { Icon } from '../ui/Icon'
 
 type Format = 'image/png' | 'image/jpeg' | 'image/webp'
 
@@ -122,7 +123,13 @@ export function ExportPanel() {
       </p>
 
       <button className="btn primary full big" onClick={exportImage} disabled={busy}>
-        {busy ? 'Rendering…' : '⤓ Download'}
+        {busy ? (
+          'Rendering…'
+        ) : (
+          <>
+            <Icon name="export" size={16} /> Download
+          </>
+        )}
       </button>
     </div>
   )

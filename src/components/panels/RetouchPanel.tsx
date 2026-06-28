@@ -1,23 +1,24 @@
 import { useEditor } from '../../state/editorStore'
 import type { RetouchMode } from '../../state/editorStore'
+import { Icon, type IconName } from '../ui/Icon'
 
-const MODES: Array<{ id: RetouchMode; label: string; icon: string; desc: string }> = [
+const MODES: Array<{ id: RetouchMode; label: string; icon: IconName; desc: string }> = [
   {
     id: 'cleanup',
     label: 'Cleanup',
-    icon: '🩹',
+    icon: 'heal',
     desc: 'Brush over blemishes, spots or distractions to heal them using nearby texture.',
   },
   {
     id: 'airbrush',
     label: 'Airbrush',
-    icon: '💨',
+    icon: 'airbrush',
     desc: 'Soft, build-up brush for smoothing skin or painting soft color.',
   },
   {
     id: 'erase',
     label: 'Magic Eraser',
-    icon: '🪄',
+    icon: 'eraser',
     desc: 'Tap an area to erase everything of a similar color (transparent). Great for clean backgrounds.',
   },
 ]
@@ -45,7 +46,9 @@ export function RetouchPanel() {
             className={tool.mode === m.id ? 'mode-cell active' : 'mode-cell'}
             onClick={() => setTool({ mode: m.id })}
           >
-            <span className="mode-icon">{m.icon}</span>
+            <span className="mode-icon">
+              <Icon name={m.icon} size={22} />
+            </span>
             <span>{m.label}</span>
           </button>
         ))}
@@ -114,7 +117,7 @@ export function RetouchPanel() {
 
       <div className="row gap" style={{ marginTop: 12 }}>
         <button className="btn" onClick={undo}>
-          ↶ Undo
+          <Icon name="undo" size={15} /> Undo
         </button>
         {hasRetouch && (
           <button className="btn ghost" onClick={clearRetouch}>

@@ -1,4 +1,5 @@
 import { useEditor } from '../../state/editorStore'
+import { Icon } from '../ui/Icon'
 
 const SWATCHES = [
   '#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#00c7be',
@@ -79,7 +80,7 @@ export function DrawPanel() {
                 <span className="layer-swatch" style={{ background: l.color }} />
                 <span className="layer-name">Stroke {i + 1}</span>
                 <span className="layer-del" onClick={() => removeLayer(l.id)}>
-                  ✕
+                  <Icon name="close" size={13} />
                 </span>
               </div>
             ))}

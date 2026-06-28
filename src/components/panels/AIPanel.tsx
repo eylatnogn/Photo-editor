@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useEditor } from '../../state/editorStore'
 import { removeImageBackground } from '../../ai/backgroundRemoval'
 import { interpretLook } from '../../ai/lookInterpreter'
+import { Icon } from '../ui/Icon'
 import type { RenderSource } from '../../engine/render'
 
 const LOOK_SUGGESTIONS = [
@@ -125,7 +126,9 @@ export function AIPanel() {
       <h3 className="panel-title">AI Tools</h3>
 
       <div className="ai-card">
-        <div className="ai-card-title">🎨 Enhance to a look</div>
+        <div className="ai-card-title">
+          <Icon name="wand" size={17} /> Enhance to a look
+        </div>
         <p className="hint">
           Describe the vibe you want and the editor builds the look for you —
           interpreted on-device, nothing is uploaded.
@@ -170,7 +173,9 @@ export function AIPanel() {
       </div>
 
       <div className="ai-card">
-        <div className="ai-card-title">✨ Auto Enhance</div>
+        <div className="ai-card-title">
+          <Icon name="sparkle" size={17} /> Auto Enhance
+        </div>
         <p className="hint">
           Analyzes the histogram and balances exposure, contrast and color in
           one click. Runs instantly, offline.
@@ -181,7 +186,9 @@ export function AIPanel() {
       </div>
 
       <div className="ai-card">
-        <div className="ai-card-title">🪄 Remove Background</div>
+        <div className="ai-card-title">
+          <Icon name="scissors" size={17} /> Remove Background
+        </div>
         <p className="hint">
           Cuts out the subject and makes the background transparent, running an
           AI segmentation model in your browser. The model (~40MB) downloads on

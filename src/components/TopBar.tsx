@@ -1,5 +1,6 @@
 import { useEditor } from '../state/editorStore'
 import { loadImageFromFile } from '../utils'
+import { Icon } from './ui/Icon'
 
 export function TopBar() {
   const fileName = useEditor((s) => s.fileName)
@@ -23,7 +24,9 @@ export function TopBar() {
   return (
     <header className="topbar">
       <div className="brand">
-        <span className="logo">◎</span>
+        <span className="logo">
+          <Icon name="logo" size={22} />
+        </span>
         <span className="brand-name">Aperture</span>
       </div>
 
@@ -40,7 +43,7 @@ export function TopBar() {
               disabled={!canUndo}
               title="Undo (Ctrl+Z)"
             >
-              ↶
+              <Icon name="undo" size={18} />
             </button>
             <button
               className="btn icon"
@@ -48,7 +51,7 @@ export function TopBar() {
               disabled={!canRedo}
               title="Redo (Ctrl+Shift+Z)"
             >
-              ↷
+              <Icon name="redo" size={18} />
             </button>
             <button
               className="btn"
@@ -59,14 +62,18 @@ export function TopBar() {
               title="Hold to compare with original"
             >
               <span className="btn-text">Compare</span>
-              <span className="btn-icon-only">◐</span>
+              <span className="btn-icon-only">
+                <Icon name="compare" size={16} />
+              </span>
             </button>
             <button className="btn ghost hide-mobile" onClick={resetEdits}>
               Reset
             </button>
             <label className="btn">
               <span className="btn-text">Open</span>
-              <span className="btn-icon-only">📁</span>
+              <span className="btn-icon-only">
+                <Icon name="open" size={16} />
+              </span>
               <input
                 type="file"
                 accept="image/*"

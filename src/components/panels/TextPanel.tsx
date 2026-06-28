@@ -1,5 +1,6 @@
 import { useEditor } from '../../state/editorStore'
 import { uid } from '../../utils'
+import { Icon } from '../ui/Icon'
 import type { TextLayer } from '../../types'
 
 const FONTS = [
@@ -64,7 +65,7 @@ export function TextPanel() {
                   removeLayer(l.id)
                 }}
               >
-                ✕
+                <Icon name="close" size={13} />
               </span>
             </button>
           ))}

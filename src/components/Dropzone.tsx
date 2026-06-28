@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { loadImageFromFile } from '../utils'
+import { Icon } from './ui/Icon'
 
 export function Dropzone() {
   const loadImage = useEditor((s) => s.loadImage)
@@ -37,7 +38,9 @@ export function Dropzone() {
       }}
     >
       <div className="dropzone-inner">
-        <div className="dropzone-icon">◎</div>
+        <div className="dropzone-icon">
+          <Icon name="logo" size={64} strokeWidth={1.4} />
+        </div>
         <h1>Aperture Photo Editor</h1>
         <p className="sub">
           Crop, retouch, filter, add text and remove backgrounds with AI — all
@@ -59,11 +62,11 @@ export function Dropzone() {
         <p className="drop-hint">or drag &amp; drop an image here</p>
         {error && <p className="error-text">{error}</p>}
         <div className="feature-row">
-          <span>🎛️ 20+ adjustments</span>
-          <span>🎨 Filters</span>
-          <span>⤢ Crop &amp; rotate</span>
-          <span>✨ AI background removal</span>
-          <span>T Text &amp; draw</span>
+          <span><Icon name="adjust" size={15} /> 20+ adjustments</span>
+          <span><Icon name="filters" size={15} /> Filters</span>
+          <span><Icon name="crop" size={15} /> Crop &amp; rotate</span>
+          <span><Icon name="ai" size={15} /> AI tools</span>
+          <span><Icon name="text" size={15} /> Text &amp; draw</span>
         </div>
       </div>
     </div>

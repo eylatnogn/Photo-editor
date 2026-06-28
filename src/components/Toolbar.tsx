@@ -1,19 +1,20 @@
 import { useEditor } from '../state/editorStore'
 import type { ToolId } from '../types'
+import { Icon, type IconName } from './ui/Icon'
 
-export const TOOLS: Array<{ id: ToolId; icon: string; label: string }> = [
-  { id: 'adjust', icon: '🎛️', label: 'Adjust' },
-  { id: 'filters', icon: '🎨', label: 'Filters' },
-  { id: 'curves', icon: '📈', label: 'Curves' },
-  { id: 'selective', icon: '🎯', label: 'Color' },
-  { id: 'crop', icon: '⤢', label: 'Crop' },
-  { id: 'retouch', icon: '🩹', label: 'Retouch' },
-  { id: 'texture', icon: '✴️', label: 'Texture' },
-  { id: 'frame', icon: '🖼️', label: 'Frame' },
-  { id: 'text', icon: 'T', label: 'Text' },
-  { id: 'draw', icon: '✎', label: 'Draw' },
-  { id: 'ai', icon: '✨', label: 'AI' },
-  { id: 'export', icon: '⤓', label: 'Export' },
+export const TOOLS: Array<{ id: ToolId; icon: IconName; label: string }> = [
+  { id: 'adjust', icon: 'adjust', label: 'Adjust' },
+  { id: 'filters', icon: 'filters', label: 'Filters' },
+  { id: 'curves', icon: 'curves', label: 'Curves' },
+  { id: 'selective', icon: 'color', label: 'Color' },
+  { id: 'crop', icon: 'crop', label: 'Crop' },
+  { id: 'retouch', icon: 'retouch', label: 'Retouch' },
+  { id: 'texture', icon: 'texture', label: 'Texture' },
+  { id: 'frame', icon: 'frame', label: 'Frame' },
+  { id: 'text', icon: 'text', label: 'Text' },
+  { id: 'draw', icon: 'draw', label: 'Draw' },
+  { id: 'ai', icon: 'ai', label: 'AI' },
+  { id: 'export', icon: 'export', label: 'Export' },
 ]
 
 export function Toolbar() {
@@ -40,7 +41,9 @@ export function Toolbar() {
           }}
           title={t.label}
         >
-          <span className="tool-icon">{t.icon}</span>
+          <span className="tool-icon">
+            <Icon name={t.icon} size={20} />
+          </span>
           <span className="tool-label">{t.label}</span>
         </button>
       ))}

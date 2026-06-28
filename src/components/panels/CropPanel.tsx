@@ -1,5 +1,6 @@
 import { useEditor } from '../../state/editorStore'
 import { Slider } from '../ui/Slider'
+import { Icon } from '../ui/Icon'
 import type { EditorDocument } from '../../types'
 
 const ASPECTS: Array<{ label: string; ratio: number | null }> = [
@@ -63,19 +64,19 @@ export function CropPanel() {
 
       <div className="row gap">
         <button className="btn" onClick={rotate90}>
-          ⟳ Rotate 90°
+          <Icon name="rotate" size={16} /> Rotate 90°
         </button>
         <button
           className="btn"
           onClick={() => commit((d) => (d.transform.flipH = !d.transform.flipH))}
         >
-          ⇋ Flip H
+          <Icon name="flipH" size={16} /> Flip H
         </button>
         <button
           className="btn"
           onClick={() => commit((d) => (d.transform.flipV = !d.transform.flipV))}
         >
-          ⇅ Flip V
+          <Icon name="flipV" size={16} /> Flip V
         </button>
       </div>
 
