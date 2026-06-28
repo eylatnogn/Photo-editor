@@ -25,6 +25,7 @@ export type IconName =
   | 'flipV'
   | 'heal'
   | 'airbrush'
+  | 'smooth'
   | 'eraser'
   | 'sparkle'
   | 'wand'
@@ -179,6 +180,13 @@ const PATHS: Record<IconName, JSX.Element> = {
     <>
       <path d="M5 15.5 13 7.5a2 2 0 0 1 2.9 0l2.6 2.6a2 2 0 0 1 0 2.9l-6 6H8Z" />
       <path d="M8 21h11" />
+    </>
+  ),
+  smooth: (
+    <>
+      <path d="M3 8.5c2.2-2.4 4.3-2.4 6.5 0s4.3 2.4 6.5 0 4.3-2.4 6.5 0" />
+      <path d="M3 13c2.2-2.4 4.3-2.4 6.5 0s4.3 2.4 6.5 0 4.3-2.4 6.5 0" opacity="0.6" />
+      <path d="M3 17.5c2.2-2.4 4.3-2.4 6.5 0s4.3 2.4 6.5 0 4.3-2.4 6.5 0" opacity="0.3" />
     </>
   ),
   sparkle: (

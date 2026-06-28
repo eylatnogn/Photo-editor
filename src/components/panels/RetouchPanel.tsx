@@ -10,10 +10,10 @@ const MODES: Array<{ id: RetouchMode; label: string; icon: IconName; desc: strin
     desc: 'Brush over blemishes, spots or distractions to heal them using nearby texture.',
   },
   {
-    id: 'airbrush',
-    label: 'Airbrush',
-    icon: 'airbrush',
-    desc: 'Soft, build-up brush for smoothing skin or painting soft color.',
+    id: 'smooth',
+    label: 'Smooth',
+    icon: 'smooth',
+    desc: 'Brush over skin, noise or texture to gently blur and soften it — no color is painted.',
   },
   {
     id: 'erase',
@@ -22,8 +22,6 @@ const MODES: Array<{ id: RetouchMode; label: string; icon: IconName; desc: strin
     desc: 'Tap an area to erase everything of a similar color (transparent). Great for clean backgrounds.',
   },
 ]
-
-const SWATCHES = ['#ffffff', '#000000', '#ffd9c2', '#ff3b30', '#34c759', '#007aff']
 
 export function RetouchPanel() {
   const tool = useEditor((s) => s.retouchTool)
@@ -67,35 +65,19 @@ export function RetouchPanel() {
             onChange={(e) => setTool({ size: Number(e.target.value) })}
           />
 
-          {tool.mode === 'airbrush' && (
+          {tool.mode === 'smooth' && (
             <>
               <label className="mini-label">
-                Softness: {Math.round(tool.hardness * 100)}%
+                Strength: {Math.round(tool.hardness * 100)}%
               </label>
               <input
                 type="range"
-                min={0}
+                min={0.05}
                 max={1}
                 step={0.01}
                 value={tool.hardness}
                 onChange={(e) => setTool({ hardness: Number(e.target.value) })}
               />
-              <label className="mini-label">Color</label>
-              <div className="swatches">
-                {SWATCHES.map((c) => (
-                  <button
-                    key={c}
-                    className={tool.color === c ? 'swatch active' : 'swatch'}
-                    style={{ background: c }}
-                    onClick={() => setTool({ color: c })}
-                  />
-                ))}
-                <input
-                  type="color"
-                  value={tool.color}
-                  onChange={(e) => setTool({ color: e.target.value })}
-                />
-              </div>
             </>
           )}
         </>

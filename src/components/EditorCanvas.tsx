@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { renderDocument } from '../engine/render'
-import { magicErase, paintAirbrush, stampHeal } from '../engine/retouch'
+import { magicErase, stampHeal, stampSmooth } from '../engine/retouch'
 import {
   createEmptyDocument,
   createFrame,
@@ -213,7 +213,7 @@ export function EditorCanvas() {
       if (retouchTool.mode === 'cleanup') {
         stampHeal(ctx, sample, px, py, radius)
       } else {
-        paintAirbrush(ctx, px, py, radius, retouchTool.color, retouchTool.hardness)
+        stampSmooth(ctx, sample, px, py, radius, retouchTool.hardness)
       }
     }
     lastPt.current = { x, y }

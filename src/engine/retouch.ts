@@ -48,30 +48,47 @@ export function stampHeal(
 }
 
 /**
- * Airbrush: soft, low-flow color buildup onto the heal layer.
+ * Smooth: sample the underlying image where the user brushes, blur it, and
+ * feather it back over the area — softening skin, noise or texture without
+ * painting any color. `strength` (0..1) controls how much it blurs.
  */
-export function paintAirbrush(
+export function stampSmooth(
   healCtx: CanvasRenderingContext2D,
+  sample: HTMLCanvasElement,
   x: number,
   y: number,
   radius: number,
-  color: string,
-  hardness: number,
+  strength: number,
 ) {
-  const r = Math.max(2, radius)
-  const { rr, gg, bb } = parseColor(color)
-  const grad = healCtx.createRadialGradient(x, y, 0, x, y, r)
-  const core = 0.35
-  grad.addColorStop(0, `rgba(${rr},${gg},${bb},${core})`)
-  grad.addColorStop(
-    Math.min(0.95, 0.3 + hardness * 0.6),
-    `rgba(${rr},${gg},${bb},${core * 0.5})`,
-  )
-  grad.addColorStop(1, `rgba(${rr},${gg},${bb},0)`)
-  healCtx.fillStyle = grad
-  healCtx.beginPath()
-  healCtx.arc(x, y, r, 0, Math.PI * 2)
-  healCtx.fill()
+  const w = sample.width
+  const h = sample.height
+  const r = Math.max(3, radius)
+  const sx = Math.max(0, Math.min(w - 2 * r, x - r))
+  const sy = Math.max(0, Math.min(h - 2 * r, y - r))
+
+  const blurPx = Math.max(1.5, r * (0.16 + strength * 0.5))
+
+  const patch = document.createElement('canvas')
+  patch.width = Math.ceil(2 * r)
+  patch.height = Math.ceil(2 * r)
+  const pctx = patch.getContext('2d')!
+
+  // Blur the sampled region in place.
+  pctx.filter = `blur(${blurPx}px)`
+  pctx.drawImage(sample, sx, sy, 2 * r, 2 * r, 0, 0, 2 * r, 2 * r)
+  pctx.filter = 'none'
+
+  // Soft circular mask so the smoothed patch blends at its edges. The core
+  // stays just under full opacity to keep a hint of the original texture.
+  pctx.globalCompositeOperation = 'destination-in'
+  const grad = pctx.createRadialGradient(r, r, 0, r, r, r)
+  grad.addColorStop(0, 'rgba(0,0,0,0.92)')
+  grad.addColorStop(0.6, 'rgba(0,0,0,0.8)')
+  grad.addColorStop(1, 'rgba(0,0,0,0)')
+  pctx.fillStyle = grad
+  pctx.fillRect(0, 0, 2 * r, 2 * r)
+
+  healCtx.drawImage(patch, x - r, y - r)
 }
 
 /**
@@ -128,11 +145,4 @@ export function magicErase(
 
   eraseCtx.putImageData(out, 0, 0)
   return count
-}
-
-function parseColor(hex: string): { rr: number; gg: number; bb: number } {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m) return { rr: 255, gg: 0, bb: 0 }
-  const n = parseInt(m[1], 16)
-  return { rr: (n >> 16) & 255, gg: (n >> 8) & 255, bb: n & 255 }
 }

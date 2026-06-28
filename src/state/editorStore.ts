@@ -23,7 +23,7 @@ export interface BrushSettings {
   opacity: number
 }
 
-export type RetouchMode = 'cleanup' | 'airbrush' | 'erase'
+export type RetouchMode = 'cleanup' | 'smooth' | 'erase'
 export interface RetouchSettings {
   mode: RetouchMode
   size: number
