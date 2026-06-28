@@ -29,6 +29,7 @@ type CropHandle =
 
 export function EditorCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const source = useEditor((s) => s.source)
   const doc = useEditor((s) => s.doc)
   const showOriginal = useEditor((s) => s.showOriginal)
@@ -111,7 +112,41 @@ export function EditorCanvas() {
       heal: retouch.heal,
       erase: retouch.erase,
     })
+    fitCanvas()
   }, [previewSource, doc, showOriginal, activeTool, retouch, retouchVersion])
+
+  // Size the canvas element (in CSS px) to fit the available stage while
+  // preserving the image's aspect ratio. Done in JS because percentage-based
+  // fitting of a <canvas> inside flexbox is unreliable across browsers.
+  function fitCanvas() {
+    const canvas = canvasRef.current
+    const stage = stageRef.current
+    if (!canvas || !stage || !canvas.width || !canvas.height) return
+    const cs = getComputedStyle(stage)
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+    const availW = stage.clientWidth - padX
+    const availH = stage.clientHeight - padY
+    if (availW <= 0 || availH <= 0) return
+    const ratio = canvas.width / canvas.height
+    let w = availW
+    let h = w / ratio
+    if (h > availH) {
+      h = availH
+      w = h * ratio
+    }
+    canvas.style.width = `${Math.round(w)}px`
+    canvas.style.height = `${Math.round(h)}px`
+  }
+
+  // Refit when the stage resizes (e.g. dragging the mobile sheet, rotating).
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => fitCanvas())
+    ro.observe(stage)
+    return () => ro.disconnect()
+  }, [])
 
   const getNorm = (e: React.PointerEvent) => {
     const rect = canvasRef.current!.getBoundingClientRect()
@@ -336,7 +371,7 @@ export function EditorCanvas() {
       : 'default'
 
   return (
-    <div className="canvas-stage">
+    <div className="canvas-stage" ref={stageRef}>
       <div className="canvas-wrap">
         <canvas
           ref={canvasRef}

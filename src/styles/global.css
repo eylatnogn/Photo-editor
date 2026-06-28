@@ -176,23 +176,25 @@ body {
 }
 .canvas-stage {
   flex: 1;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
   min-width: 0;
   min-height: 0;
+  /* Never let a tall image overflow and cover the panel below. */
+  overflow: hidden;
 }
 .canvas-wrap {
   position: relative;
   display: inline-flex;
-  max-width: 100%;
-  max-height: 100%;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 .edit-canvas {
   display: block;
+  /* Width/height are set in CSS px by the editor to preserve aspect ratio. */
   max-width: 100%;
-  max-height: calc(100vh - 100px);
+  max-height: 100%;
   /* Prevent the browser from scrolling/zooming while dragging on the image. */
   touch-action: none;
   /* checkerboard for transparency */
@@ -728,22 +730,29 @@ input[type='color'] {
     max-height: 100%;
   }
 
-  /* The panel becomes a bottom sheet */
+  /* The panel becomes a resizable bottom sheet */
   .sidebar {
     order: 2;
     width: 100%;
     border-left: none;
     border-top: 1px solid var(--border);
     border-radius: 16px 16px 0 0;
-    max-height: 46vh;
+    /* Height is driven by the drag handle (falls back to 46dvh). */
+    height: var(--sheet-h, 46dvh);
+    max-height: 85dvh;
+    min-height: 44px;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
-    transition: max-height 0.22s ease;
+    transition: height 0.18s ease;
+  }
+  .sidebar.resizing {
+    transition: none;
   }
   .sidebar.collapsed {
-    max-height: 44px;
+    height: 44px;
   }
   .sidebar.collapsed .sheet-body {
     display: none;
@@ -756,10 +765,14 @@ input[type='color'] {
     background: none;
     border: none;
     color: var(--text);
-    padding: 10px 16px;
-    cursor: pointer;
+    padding: 14px 16px 10px;
+    cursor: grab;
     flex: 0 0 auto;
     position: relative;
+    touch-action: none;
+  }
+  .sheet-header:active {
+    cursor: grabbing;
   }
   .sheet-grip {
     position: absolute;
