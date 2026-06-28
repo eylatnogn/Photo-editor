@@ -148,6 +148,14 @@ export function EditorCanvas() {
     return () => ro.disconnect()
   }, [])
 
+  // Switching tools can change the rendered dimensions (e.g. crop shows the
+  // full frame) and the panel layout. Refit once more after layout settles so
+  // the preview can never be left at a stale size.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => fitCanvas())
+    return () => cancelAnimationFrame(id)
+  }, [activeTool])
+
   const getNorm = (e: React.PointerEvent) => {
     const rect = canvasRef.current!.getBoundingClientRect()
     return {
