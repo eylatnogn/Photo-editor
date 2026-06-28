@@ -1,7 +1,7 @@
 import { useEditor } from '../state/editorStore'
 import type { ToolId } from '../types'
 
-const TOOLS: Array<{ id: ToolId; icon: string; label: string }> = [
+export const TOOLS: Array<{ id: ToolId; icon: string; label: string }> = [
   { id: 'adjust', icon: '🎛️', label: 'Adjust' },
   { id: 'filters', icon: '🎨', label: 'Filters' },
   { id: 'crop', icon: '⤢', label: 'Crop' },
@@ -13,7 +13,9 @@ const TOOLS: Array<{ id: ToolId; icon: string; label: string }> = [
 
 export function Toolbar() {
   const activeTool = useEditor((s) => s.activeTool)
+  const panelOpen = useEditor((s) => s.panelOpen)
   const setActiveTool = useEditor((s) => s.setActiveTool)
+  const setPanelOpen = useEditor((s) => s.setPanelOpen)
   const selectLayer = useEditor((s) => s.selectLayer)
 
   return (
@@ -23,7 +25,12 @@ export function Toolbar() {
           key={t.id}
           className={activeTool === t.id ? 'tool active' : 'tool'}
           onClick={() => {
-            setActiveTool(t.id)
+            // Re-tapping the active tool toggles the panel (handy on mobile).
+            if (activeTool === t.id) {
+              setPanelOpen(!panelOpen)
+            } else {
+              setActiveTool(t.id)
+            }
             if (t.id !== 'text') selectLayer(null)
           }}
           title={t.label}

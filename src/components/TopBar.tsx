@@ -52,18 +52,21 @@ export function TopBar() {
             </button>
             <button
               className="btn"
-              onMouseDown={() => setShowOriginal(true)}
-              onMouseUp={() => setShowOriginal(false)}
-              onMouseLeave={() => setShowOriginal(false)}
+              onPointerDown={() => setShowOriginal(true)}
+              onPointerUp={() => setShowOriginal(false)}
+              onPointerLeave={() => setShowOriginal(false)}
+              onPointerCancel={() => setShowOriginal(false)}
               title="Hold to compare with original"
             >
-              Compare
+              <span className="btn-text">Compare</span>
+              <span className="btn-icon-only">◐</span>
             </button>
-            <button className="btn ghost" onClick={resetEdits}>
+            <button className="btn ghost hide-mobile" onClick={resetEdits}>
               Reset
             </button>
             <label className="btn">
-              Open
+              <span className="btn-text">Open</span>
+              <span className="btn-icon-only">📁</span>
               <input
                 type="file"
                 accept="image/*"

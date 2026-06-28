@@ -36,6 +36,7 @@ interface EditorState {
   activeTool: ToolId
   showOriginal: boolean
   selectedLayerId: string | null
+  panelOpen: boolean
 
   brush: BrushSettings
   ai: AIState
@@ -61,6 +62,7 @@ interface EditorState {
   setActiveTool: (tool: ToolId) => void
   setShowOriginal: (show: boolean) => void
   selectLayer: (id: string | null) => void
+  setPanelOpen: (open: boolean) => void
 
   // --- layers ---
   addLayer: (layer: Layer) => void
@@ -87,6 +89,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeTool: 'adjust',
   showOriginal: false,
   selectedLayerId: null,
+  panelOpen: true,
 
   brush: { color: '#ff3b30', size: 8, opacity: 1 },
   ai: { processing: false, progress: 0, stage: '', error: null },
@@ -167,9 +170,10 @@ export const useEditor = create<EditorState>((set, get) => ({
       selectedLayerId: null,
     })),
 
-  setActiveTool: (tool) => set({ activeTool: tool }),
+  setActiveTool: (tool) => set({ activeTool: tool, panelOpen: true }),
   setShowOriginal: (show) => set({ showOriginal: show }),
   selectLayer: (id) => set({ selectedLayerId: id }),
+  setPanelOpen: (open) => set({ panelOpen: open }),
 
   addLayer: (layer) =>
     set((s) => {

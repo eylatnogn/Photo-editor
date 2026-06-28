@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useEditor } from './state/editorStore'
 import { Dropzone } from './components/Dropzone'
 import { TopBar } from './components/TopBar'
-import { Toolbar } from './components/Toolbar'
+import { Toolbar, TOOLS } from './components/Toolbar'
 import { EditorCanvas } from './components/EditorCanvas'
 import { AdjustmentsPanel } from './components/panels/AdjustmentsPanel'
 import { FiltersPanel } from './components/panels/FiltersPanel'
@@ -38,6 +38,9 @@ export default function App() {
   const hasImage = useEditor((s) => s.hasImage)
   const undo = useEditor((s) => s.undo)
   const redo = useEditor((s) => s.redo)
+  const activeTool = useEditor((s) => s.activeTool)
+  const panelOpen = useEditor((s) => s.panelOpen)
+  const setPanelOpen = useEditor((s) => s.setPanelOpen)
 
   // Global keyboard shortcuts.
   useEffect(() => {
@@ -71,6 +74,8 @@ export default function App() {
     )
   }
 
+  const toolLabel = TOOLS.find((t) => t.id === activeTool)?.label ?? ''
+
   return (
     <div className="app editing">
       <TopBar />
@@ -79,8 +84,19 @@ export default function App() {
         <main className="stage-area">
           <EditorCanvas />
         </main>
-        <aside className="sidebar">
-          <ActivePanel />
+        <aside className={panelOpen ? 'sidebar' : 'sidebar collapsed'}>
+          <button
+            className="sheet-header"
+            onClick={() => setPanelOpen(!panelOpen)}
+            aria-label={panelOpen ? 'Collapse panel' : 'Expand panel'}
+          >
+            <span className="sheet-grip" />
+            <span className="sheet-title">{toolLabel}</span>
+            <span className="sheet-chevron">{panelOpen ? '▾' : '▴'}</span>
+          </button>
+          <div className="sheet-body">
+            <ActivePanel />
+          </div>
         </aside>
       </div>
     </div>
