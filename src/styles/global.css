@@ -34,6 +34,9 @@ body {
 
 .app {
   height: 100vh;
+  /* Use the dynamic viewport height so the bottom tool bar is never hidden
+     behind the mobile browser's URL/navigation bar. */
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -702,8 +705,9 @@ input[type='color'] {
     border-top: 1px solid var(--border);
     padding: 0;
     justify-content: space-around;
-    /* keep clear of iOS home indicator */
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    flex: 0 0 auto;
+    /* keep clear of the home indicator / browser nav bar */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
   }
   .tool {
     flex: 1;
