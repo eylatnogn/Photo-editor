@@ -14,18 +14,22 @@ const ASPECTS: Array<{ label: string; ratio: number | null }> = [
   { label: '2:3', ratio: 2 / 3 },
 ]
 
-function setAspectCrop(ratio: number | null) {
+// `ratio` is the desired output width/height in *pixels*. The crop is stored in
+// normalized [0..1] source coordinates, so we must account for the source's own
+// aspect ratio (srcAspect = sourceWidth / sourceHeight) to land on the right
+// shape — otherwise e.g. "1:1" on a 4:3 photo would crop nothing.
+function setAspectCrop(ratio: number | null, srcAspect: number) {
   return (doc: EditorDocument) => {
     if (ratio === null) {
       doc.transform.crop = { x: 0, y: 0, width: 1, height: 1 }
       return
     }
-    // Largest centered rect of the given aspect within the unit square.
+    const normRatio = ratio / srcAspect // width/height in normalized space
     let w = 1
-    let h = w / ratio
+    let h = w / normRatio
     if (h > 1) {
       h = 1
-      w = h * ratio
+      w = h * normRatio
     }
     doc.transform.crop = {
       x: (1 - w) / 2,
@@ -39,6 +43,11 @@ function setAspectCrop(ratio: number | null) {
 export function CropPanel() {
   const transform = useEditor((s) => s.doc.transform)
   const commit = useEditor((s) => s.commit)
+  const source = useEditor((s) => s.source)
+  const srcAspect = source
+    ? (source instanceof HTMLImageElement ? source.naturalWidth : source.width) /
+      (source instanceof HTMLImageElement ? source.naturalHeight : source.height)
+    : 1
 
   const rotate90 = () =>
     commit((d) => {
@@ -55,7 +64,7 @@ export function CropPanel() {
           <button
             key={a.label}
             className="btn chip"
-            onClick={() => commit(setAspectCrop(a.ratio))}
+            onClick={() => commit(setAspectCrop(a.ratio, srcAspect))}
           >
             {a.label}
           </button>
