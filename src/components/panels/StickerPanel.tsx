@@ -7,9 +7,10 @@ import { Icon } from '../ui/Icon'
 import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
-  { id: 'shapes', label: 'Shapes' },
-  { id: 'vintage', label: 'Vintage' },
   { id: 'doodle', label: 'Doodles' },
+  { id: 'collage', label: 'Collage' },
+  { id: 'shapes', label: 'Shapes' },
+  { id: 'retro', label: 'Retro' },
   { id: 'tape', label: 'Tape' },
   { id: 'label', label: 'Labels' },
   { id: 'emoji', label: 'Emoji' },
@@ -37,6 +38,9 @@ function StickerThumb({ def }: { def: StickerDef }) {
     if (!c) return
     const ctx = c.getContext('2d')!
     ctx.clearRect(0, 0, c.width, c.height)
+    // Neutral backdrop so both dark and light (doodle) stickers are visible.
+    ctx.fillStyle = '#9aa0aa'
+    ctx.fillRect(0, 0, c.width, c.height)
     ctx.save()
     ctx.translate(c.width / 2, c.height / 2)
     const wide = (def.aspect ?? 1) > 1
@@ -51,7 +55,7 @@ export function StickerPanel() {
   const updateLayer = useEditor((s) => s.updateLayer)
   const layers = useEditor((s) => s.doc.layers)
   const selectedId = useEditor((s) => s.selectedLayerId)
-  const [cat, setCat] = useState<StickerCategory>('shapes')
+  const [cat, setCat] = useState<StickerCategory>('doodle')
 
   const selected = layers.find((l) => l.id === selectedId)
   const selImage = selected?.type === 'image' ? (selected as ImageLayer) : null
@@ -73,7 +77,7 @@ export function StickerPanel() {
       rotation: 0,
       opacity: 1,
       color: def.defaultColor,
-      text: def.hasText ? 'Location' : undefined,
+      text: def.hasText ? def.defaultText ?? 'Text' : undefined,
     })
   }
 

@@ -2,7 +2,14 @@
 // origin, filling a target width `w` (px); `measure` returns its bounding box
 // so the transform handles and hit-testing can size it.
 
-export type StickerCategory = 'shapes' | 'vintage' | 'doodle' | 'tape' | 'label' | 'emoji'
+export type StickerCategory =
+  | 'doodle'
+  | 'collage'
+  | 'shapes'
+  | 'retro'
+  | 'tape'
+  | 'label'
+  | 'emoji'
 
 export interface StickerDef {
   id: string
@@ -11,6 +18,7 @@ export interface StickerDef {
   hasColor: boolean
   hasText: boolean
   defaultColor: string
+  defaultText?: string
   emoji?: string
   aspect?: number // w/h for fixed-aspect stickers (default 1)
 }
@@ -450,22 +458,6 @@ function drawBanner(ctx: CanvasRenderingContext2D, w: number, color: string, tex
     ctx.fillText(text, 0, 0)
   }
 }
-function drawArrowDoodle(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  ctx.strokeStyle = color
-  ctx.lineWidth = w * 0.06
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  ctx.beginPath()
-  ctx.moveTo(-w * 0.45, w * 0.2)
-  ctx.bezierCurveTo(-w * 0.1, -w * 0.4, w * 0.2, -w * 0.3, w * 0.4, w * 0.05)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(w * 0.4, w * 0.05)
-  ctx.lineTo(w * 0.18, w * 0.02)
-  ctx.moveTo(w * 0.4, w * 0.05)
-  ctx.lineTo(w * 0.34, -w * 0.18)
-  ctx.stroke()
-}
 function drawSquiggle(ctx: CanvasRenderingContext2D, w: number, color: string) {
   ctx.strokeStyle = color
   ctx.lineWidth = w * 0.07
@@ -478,6 +470,245 @@ function drawSquiggle(ctx: CanvasRenderingContext2D, w: number, color: string) {
     ctx.arc(-w / 2 + r * (2 * i + 1), 0, r, Math.PI, 0, i % 2 === 0)
   }
   ctx.stroke()
+}
+
+// ----- Hand-drawn marker doodles (SCRL scrapbook vibe) -----
+function marker(ctx: CanvasRenderingContext2D, w: number, color: string, lw = 0.072) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = w * lw
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+}
+function dHeart(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  const s = w * 0.4
+  ctx.beginPath()
+  ctx.moveTo(0, s * 0.82)
+  ctx.bezierCurveTo(s * 1.2, -s * 0.05, s * 0.55, -s * 1.05, 0, -s * 0.3)
+  ctx.bezierCurveTo(-s * 0.55, -s * 1.05, -s * 1.2, -s * 0.05, 0, s * 0.82)
+  ctx.closePath()
+  ctx.stroke()
+}
+function dStarOutline(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  const R = w * 0.44
+  const r = R * 0.44
+  ctx.beginPath()
+  for (let i = 0; i <= 10; i++) {
+    const rad = i % 2 ? r : R
+    const a = (i / 10) * PI2 - Math.PI / 2
+    const x = Math.cos(a) * rad
+    const y = Math.sin(a) * rad
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)
+  }
+  ctx.closePath()
+  ctx.stroke()
+}
+function dSparkle(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  const R = w * 0.42
+  const draw = (cx: number, cy: number, rr: number) => {
+    ctx.beginPath()
+    ctx.moveTo(cx, cy - rr)
+    ctx.quadraticCurveTo(cx + rr * 0.16, cy - rr * 0.16, cx + rr, cy)
+    ctx.quadraticCurveTo(cx + rr * 0.16, cy + rr * 0.16, cx, cy + rr)
+    ctx.quadraticCurveTo(cx - rr * 0.16, cy + rr * 0.16, cx - rr, cy)
+    ctx.quadraticCurveTo(cx - rr * 0.16, cy - rr * 0.16, cx, cy - rr)
+    ctx.closePath()
+    ctx.stroke()
+  }
+  draw(-w * 0.06, w * 0.04, R * 0.86)
+  draw(w * 0.32, -w * 0.3, R * 0.34)
+}
+function dArrow(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.44, w * 0.16)
+  ctx.bezierCurveTo(-w * 0.1, -w * 0.42, w * 0.18, -w * 0.34, w * 0.38, w * 0.04)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(w * 0.38, w * 0.04)
+  ctx.lineTo(w * 0.14, w * 0.04)
+  ctx.moveTo(w * 0.38, w * 0.04)
+  ctx.lineTo(w * 0.32, -w * 0.2)
+  ctx.stroke()
+}
+function dSwirl(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  ctx.beginPath()
+  const steps = 70
+  const turns = 2.3
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const a = t * turns * PI2
+    const rad = t * w * 0.42
+    const x = Math.cos(a) * rad
+    const y = Math.sin(a) * rad
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)
+  }
+  ctx.stroke()
+}
+function dCircleScribble(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color, 0.06)
+  ctx.beginPath()
+  const steps = 60
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const a = -0.4 + t * (PI2 + 0.9)
+    const rad = w * 0.42 * (1 + t * 0.04)
+    const x = Math.cos(a) * rad
+    const y = Math.sin(a) * rad * 0.92
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)
+  }
+  ctx.stroke()
+}
+function dLightningOutline(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  ctx.beginPath()
+  ctx.moveTo(w * 0.12, -w * 0.46)
+  ctx.lineTo(-w * 0.26, w * 0.06)
+  ctx.lineTo(0, w * 0.06)
+  ctx.lineTo(-w * 0.12, w * 0.46)
+  ctx.lineTo(w * 0.28, -w * 0.1)
+  ctx.lineTo(w * 0.02, -w * 0.1)
+  ctx.closePath()
+  ctx.stroke()
+}
+function dSun(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color)
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.22, 0, PI2)
+  ctx.stroke()
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * PI2
+    ctx.beginPath()
+    ctx.moveTo(Math.cos(a) * w * 0.3, Math.sin(a) * w * 0.3)
+    ctx.lineTo(Math.cos(a) * w * 0.45, Math.sin(a) * w * 0.45)
+    ctx.stroke()
+  }
+}
+function dCheck(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  marker(ctx, w, color, 0.1)
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.36, w * 0.02)
+  ctx.lineTo(-w * 0.08, w * 0.32)
+  ctx.lineTo(w * 0.4, -w * 0.34)
+  ctx.stroke()
+}
+
+// ----- Collage / scrapbook paper stickers -----
+function stickyNote(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  const h = w * 0.92
+  const fold = w * 0.2
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.moveTo(-w / 2, -h / 2)
+  ctx.lineTo(w / 2, -h / 2)
+  ctx.lineTo(w / 2, h / 2 - fold)
+  ctx.lineTo(w / 2 - fold, h / 2)
+  ctx.lineTo(-w / 2, h / 2)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = 'rgba(0,0,0,0.13)'
+  ctx.beginPath()
+  ctx.moveTo(w / 2, h / 2 - fold)
+  ctx.lineTo(w / 2 - fold, h / 2)
+  ctx.lineTo(w / 2 - fold, h / 2 - fold)
+  ctx.closePath()
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)'
+  ctx.lineWidth = w * 0.012
+  for (let i = 1; i <= 3; i++) {
+    const y = -h / 2 + (h / 4.4) * i
+    ctx.beginPath()
+    ctx.moveTo(-w * 0.36, y)
+    ctx.lineTo(w * 0.36, y)
+    ctx.stroke()
+  }
+}
+function ticket(ctx: CanvasRenderingContext2D, w: number, color: string, text?: string) {
+  const h = w / 2.6
+  ctx.fillStyle = color
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, h * 0.16)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'
+  ctx.setLineDash([h * 0.14, h * 0.1])
+  ctx.lineWidth = w * 0.012
+  ctx.beginPath()
+  ctx.moveTo(w * 0.24, -h / 2)
+  ctx.lineTo(w * 0.24, h / 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.fillStyle = 'rgba(0,0,0,0.72)'
+  ctx.font = `700 ${h * 0.3}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text || 'ADMIT ONE', -w * 0.13, 0)
+  ctx.save()
+  ctx.translate(w * 0.37, 0)
+  ctx.rotate(-Math.PI / 2)
+  ctx.font = `700 ${h * 0.26}px Arial, sans-serif`
+  ctx.fillText('★', 0, 0)
+  ctx.restore()
+}
+function stampSticker(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = '#f7f3e9'
+  roundRectPath(ctx, -w / 2, -w / 2, w, w, w * 0.04)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)'
+  ctx.setLineDash([w * 0.04, w * 0.035])
+  ctx.lineWidth = w * 0.02
+  ctx.strokeRect(-w * 0.4, -w * 0.4, w * 0.8, w * 0.8)
+  ctx.setLineDash([])
+  ctx.fillStyle = color
+  roundRectPath(ctx, -w * 0.32, -w * 0.32, w * 0.64, w * 0.64, w * 0.02)
+  ctx.fill()
+  ctx.fillStyle = '#fff'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `800 ${w * 0.16}px Arial, sans-serif`
+  ctx.fillText('SCRL', 0, -w * 0.13)
+  fillStar(ctx, w * 0.3, 5, 0.42)
+}
+function sealSticker(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const n = 12
+  const R = w * 0.32
+  const br = w * 0.1
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * PI2
+    ctx.beginPath()
+    ctx.arc(Math.cos(a) * R, Math.sin(a) * R, br, 0, PI2)
+    ctx.fill()
+  }
+  ctx.beginPath()
+  ctx.arc(0, 0, R + br * 0.3, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = '#fff'
+  fillStar(ctx, w * 0.34, 5, 0.42)
+}
+function priceTag(ctx: CanvasRenderingContext2D, w: number, color: string, text?: string) {
+  const h = w * 0.5
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.moveTo(-w / 2, 0)
+  ctx.lineTo(-w / 2 + h * 0.55, -h / 2)
+  ctx.lineTo(w / 2, -h / 2)
+  ctx.lineTo(w / 2, h / 2)
+  ctx.lineTo(-w / 2 + h * 0.55, h / 2)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  ctx.beginPath()
+  ctx.arc(-w / 2 + h * 0.34, 0, h * 0.12, 0, PI2)
+  ctx.fill()
+  if (text) {
+    ctx.fillStyle = '#fff'
+    ctx.font = `700 ${h * 0.42}px Arial, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, h * 0.1, 0)
+  }
 }
 
 export const STICKERS: StickerDef[] = [
@@ -497,22 +728,38 @@ export const STICKERS: StickerDef[] = [
   { id: 'peace', label: 'Peace', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffffff' },
   { id: 'tape', label: 'Washi tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e7d8a8', aspect: 3 },
   { id: 'scalloptape', label: 'Scallop tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e8b9c4', aspect: 3 },
-  { id: 'pin', label: 'Location pin', category: 'label', hasColor: false, hasText: true, defaultColor: '#ffffff', aspect: 3 },
-  { id: 'datestamp', label: 'Date stamp', category: 'label', hasColor: true, hasText: true, defaultColor: '#ffb300' },
+  { id: 'pin', label: 'Location pin', category: 'label', hasColor: false, hasText: true, defaultColor: '#ffffff', defaultText: 'Location', aspect: 3 },
+  { id: 'datestamp', label: 'Date stamp', category: 'label', hasColor: true, hasText: true, defaultColor: '#ffb300', defaultText: "'24 ▸" },
   // vintage
-  { id: 'burst', label: 'Starburst', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ffd84d' },
-  { id: 'sun', label: 'Retro sun', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff9d3c' },
-  { id: 'butterfly', label: 'Butterfly', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
-  { id: 'filmlabel', label: 'Film label', category: 'vintage', hasColor: false, hasText: false, defaultColor: '#f5c518', aspect: 2.6 },
-  { id: 'cassette', label: 'Cassette', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#7c5cff', aspect: 1.5 },
-  { id: 'vinyl', label: 'Vinyl', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff5b52' },
-  { id: 'daisy', label: 'Daisy', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ffffff' },
-  { id: 'bow', label: 'Bow', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
-  // doodles
-  { id: 'arrowdoodle', label: 'Arrow', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b30' },
-  { id: 'squiggle', label: 'Squiggle', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b30' },
-  { id: 'speech', label: 'Speech', category: 'doodle', hasColor: true, hasText: true, defaultColor: '#ffffff', aspect: 1.6 },
-  { id: 'banner', label: 'Banner', category: 'doodle', hasColor: true, hasText: true, defaultColor: '#ff3b67', aspect: 3.4 },
+  // retro clip-art
+  { id: 'burst', label: 'Starburst', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ffd84d' },
+  { id: 'sun', label: 'Retro sun', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff9d3c' },
+  { id: 'butterfly', label: 'Butterfly', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
+  { id: 'cassette', label: 'Cassette', category: 'retro', hasColor: true, hasText: false, defaultColor: '#7c5cff', aspect: 1.5 },
+  { id: 'vinyl', label: 'Vinyl', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff5b52' },
+  { id: 'daisy', label: 'Daisy', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ffffff' },
+  { id: 'bow', label: 'Bow', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
+  // hand-drawn marker doodles
+  { id: 'd_star', label: 'Star', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  { id: 'd_heart', label: 'Heart', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
+  { id: 'd_sparkle', label: 'Sparkle', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  { id: 'arrowdoodle', label: 'Arrow', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  { id: 'd_swirl', label: 'Swirl', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  { id: 'd_circle', label: 'Circle', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b30' },
+  { id: 'd_bolt', label: 'Bolt', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  { id: 'd_sun', label: 'Sun', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  { id: 'd_check', label: 'Check', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#34c759' },
+  { id: 'squiggle', label: 'Underline', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
+  // collage / scrapbook paper
+  { id: 'note', label: 'Sticky note', category: 'collage', hasColor: true, hasText: false, defaultColor: '#fff7a8' },
+  { id: 'ticket', label: 'Ticket', category: 'collage', hasColor: true, hasText: true, defaultColor: '#ff8a5c', defaultText: 'ADMIT ONE', aspect: 2.6 },
+  { id: 'stamp', label: 'Stamp', category: 'collage', hasColor: true, hasText: false, defaultColor: '#e0322b' },
+  { id: 'seal', label: 'Seal', category: 'collage', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
+  { id: 'tag', label: 'Price tag', category: 'collage', hasColor: true, hasText: true, defaultColor: '#ff8fb1', defaultText: '$24', aspect: 2 },
+  { id: 'filmlabel', label: 'Film label', category: 'collage', hasColor: false, hasText: false, defaultColor: '#f5c518', aspect: 2.6 },
+  // labels
+  { id: 'speech', label: 'Speech', category: 'label', hasColor: true, hasText: true, defaultColor: '#ffffff', defaultText: 'hi!', aspect: 1.6 },
+  { id: 'banner', label: 'Banner', category: 'label', hasColor: true, hasText: true, defaultColor: '#ff3b67', defaultText: 'NEW', aspect: 3.4 },
 ]
 
 const EMOJI = [
@@ -655,7 +902,7 @@ export function drawSticker(
       drawBow(ctx, w, color)
       break
     case 'arrowdoodle':
-      drawArrowDoodle(ctx, w, color)
+      dArrow(ctx, w, color)
       break
     case 'squiggle':
       drawSquiggle(ctx, w, color)
@@ -665,6 +912,45 @@ export function drawSticker(
       break
     case 'banner':
       drawBanner(ctx, w, color, text)
+      break
+    case 'd_star':
+      dStarOutline(ctx, w, color)
+      break
+    case 'd_heart':
+      dHeart(ctx, w, color)
+      break
+    case 'd_sparkle':
+      dSparkle(ctx, w, color)
+      break
+    case 'd_swirl':
+      dSwirl(ctx, w, color)
+      break
+    case 'd_circle':
+      dCircleScribble(ctx, w, color)
+      break
+    case 'd_bolt':
+      dLightningOutline(ctx, w, color)
+      break
+    case 'd_sun':
+      dSun(ctx, w, color)
+      break
+    case 'd_check':
+      dCheck(ctx, w, color)
+      break
+    case 'note':
+      stickyNote(ctx, w, color)
+      break
+    case 'ticket':
+      ticket(ctx, w, color, text)
+      break
+    case 'stamp':
+      stampSticker(ctx, w, color)
+      break
+    case 'seal':
+      sealSticker(ctx, w, color)
+      break
+    case 'tag':
+      priceTag(ctx, w, color, text)
       break
   }
 }
