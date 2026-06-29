@@ -51,21 +51,20 @@ export function LayersPanel() {
 
   return (
     <div className="panel">
-      <div className="row spread" style={{ marginTop: 0 }}>
-        <h3 className="panel-title" style={{ margin: 0 }}>Layers</h3>
-        <button className="btn" onClick={() => fileInput.current?.click()}>
-          <Icon name="photo" size={14} /> Add image
-        </button>
-      </div>
+      <h3 className="panel-title">Layers</h3>
+      <button className="btn primary block" onClick={() => fileInput.current?.click()}>
+        <Icon name="photo" size={16} /> Add photos
+      </button>
       <input
         ref={fileInput}
         type="file"
         accept="image/*"
+        multiple
         hidden
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) addPhoto(f)
+        onChange={async (e) => {
+          const files = Array.from(e.target.files ?? [])
           e.target.value = ''
+          for (const f of files) await addPhoto(f)
         }}
       />
 

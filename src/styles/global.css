@@ -345,6 +345,13 @@ input[type='range']::-moz-range-thumb {
 .btn.ghost {
   background: none;
 }
+.btn.block {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 12px;
+  margin: 6px 0 12px;
+  font-weight: 600;
+}
 .btn.icon {
   padding: 7px 10px;
   font-size: 16px;
