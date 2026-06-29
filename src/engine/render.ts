@@ -288,17 +288,35 @@ export function drawFramedImage(
   }
   if (frame === 'white') {
     const b = w * 0.04
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.28)'
+    ctx.shadowBlur = w * 0.04
+    ctx.shadowOffsetY = w * 0.016
     ctx.fillStyle = '#fff'
     ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    ctx.restore()
     draw()
     return
   }
   if (frame === 'polaroid') {
     const b = w * 0.05
     const bottom = w * 0.22
-    ctx.fillStyle = '#fbfbf7'
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = w * 0.05
+    ctx.shadowOffsetY = w * 0.02
+    // very slight off-white paper with a top-to-bottom tonal shift
+    const paper = ctx.createLinearGradient(0, -h / 2 - b, 0, h / 2 + bottom)
+    paper.addColorStop(0, '#ffffff')
+    paper.addColorStop(1, '#f3f2ec')
+    ctx.fillStyle = paper
     ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + b + bottom)
+    ctx.restore()
     draw()
+    // faint inner shadow where the photo meets the paper
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)'
+    ctx.lineWidth = w * 0.004
+    ctx.strokeRect(-w / 2, -h / 2, w, h)
     return
   }
   if (frame === 'tape') {
@@ -352,6 +370,71 @@ export function drawFramedImage(
     ctx.fillText('▸ 6', -w / 2 + b * 0.1, h / 2 + b * 0.6)
     ctx.textAlign = 'right'
     ctx.fillText('6 ▸', w / 2 - b * 0.1, h / 2 + b * 0.6)
+    return
+  }
+
+  if (frame === 'sticker') {
+    // Glossy die-cut photo sticker: thick white outline that hugs the photo,
+    // a soft drop shadow so it lifts off the page, and a diagonal laminate sheen.
+    const b = w * 0.06
+    const outerR = Math.min(w, h) * 0.14 + b
+    const innerR = Math.min(w, h) * 0.1
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.34)'
+    ctx.shadowBlur = w * 0.05
+    ctx.shadowOffsetX = w * 0.012
+    ctx.shadowOffsetY = w * 0.022
+    ctx.fillStyle = '#ffffff'
+    roundRect(ctx, -w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b, outerR)
+    ctx.fill()
+    ctx.restore()
+    // photo, rounded to match the die-cut
+    ctx.save()
+    roundRect(ctx, -w / 2, -h / 2, w, h, innerR)
+    ctx.clip()
+    draw()
+    ctx.restore()
+    // hairline between photo and white edge
+    ctx.strokeStyle = 'rgba(0,0,0,0.07)'
+    ctx.lineWidth = w * 0.004
+    roundRect(ctx, -w / 2, -h / 2, w, h, innerR)
+    ctx.stroke()
+    // laminate sheen across the whole sticker
+    ctx.save()
+    roundRect(ctx, -w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b, outerR)
+    ctx.clip()
+    const sheen = ctx.createLinearGradient(-w / 2 - b, -h / 2 - b, w * 0.15, h * 0.05)
+    sheen.addColorStop(0, 'rgba(255,255,255,0.4)')
+    sheen.addColorStop(0.16, 'rgba(255,255,255,0.12)')
+    sheen.addColorStop(0.32, 'rgba(255,255,255,0)')
+    ctx.fillStyle = sheen
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    ctx.restore()
+    return
+  }
+
+  if (frame === 'rounded') {
+    // Soft rounded-corner photo card with a gentle drop shadow (modern, clean).
+    const r = Math.min(w, h) * 0.1
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = w * 0.045
+    ctx.shadowOffsetY = w * 0.02
+    ctx.fillStyle = '#000'
+    roundRect(ctx, -w / 2, -h / 2, w, h, r)
+    ctx.fill()
+    ctx.restore()
+    ctx.save()
+    roundRect(ctx, -w / 2, -h / 2, w, h, r)
+    ctx.clip()
+    draw()
+    // soft top sheen
+    const gl = ctx.createLinearGradient(0, -h / 2, 0, h * 0.1)
+    gl.addColorStop(0, 'rgba(255,255,255,0.12)')
+    gl.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = gl
+    ctx.fillRect(-w / 2, -h / 2, w, h)
+    ctx.restore()
     return
   }
 
@@ -409,8 +492,10 @@ export function drawFramedImage(
   draw()
 }
 
-// A stylised point-and-shoot camera: the photo is the LCD, with a body and
-// controls drawn around it (extends to the right of and above the photo).
+// A realistic compact digital camera seen from the back: the photo is the LCD,
+// with a brushed-metal body, recessed screen, mode dial, D-pad and buttons —
+// rendered with layered gradients, bevels and soft shadows to avoid a flat,
+// clip-art look. Extends to the right of and above the photo.
 function drawCameraFrame(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -418,76 +503,221 @@ function drawCameraFrame(
   draw: () => void,
 ) {
   const TAU = Math.PI * 2
-  const b = w * 0.035
-  const ctrlW = w * 0.46
-  const topH = h * 0.16
-  const botH = h * 0.1
+  const b = w * 0.05 // screen bezel
+  const ctrlW = w * 0.5 // control column to the right
+  const topH = h * 0.2
+  const botH = h * 0.12
   const left = -w / 2 - b
   const top = -h / 2 - topH
   const bw = w + b + ctrlW + b
   const bh = h + topH + botH
+  const rad = w * 0.045
+  const cx = w / 2 + ctrlW * 0.5 // control column centre
 
-  // body
-  const g = ctx.createLinearGradient(0, top, 0, top + bh)
-  g.addColorStop(0, '#eceef0')
-  g.addColorStop(0.5, '#cdd0d4')
-  g.addColorStop(1, '#aeb2b7')
-  ctx.fillStyle = g
-  roundRect(ctx, left, top, bw, bh, w * 0.05)
+  // soft contact shadow under the whole body
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'
+  ctx.shadowBlur = w * 0.05
+  ctx.shadowOffsetY = w * 0.025
+  ctx.fillStyle = '#c2c5c9'
+  roundRect(ctx, left, top, bw, bh, rad)
   ctx.fill()
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.restore()
+
+  // brushed-metal body: vertical sheen + faint horizontal banding
+  const body = ctx.createLinearGradient(0, top, 0, top + bh)
+  body.addColorStop(0, '#f4f6f7')
+  body.addColorStop(0.18, '#dfe2e6')
+  body.addColorStop(0.5, '#c4c8cd')
+  body.addColorStop(0.82, '#d3d6da')
+  body.addColorStop(1, '#a7abb1')
+  ctx.fillStyle = body
+  roundRect(ctx, left, top, bw, bh, rad)
+  ctx.fill()
+  ctx.save()
+  roundRect(ctx, left, top, bw, bh, rad)
+  ctx.clip()
+  ctx.globalAlpha = 0.05
+  ctx.strokeStyle = '#5a5e64'
+  ctx.lineWidth = 1
+  for (let y = top + 2; y < top + bh; y += 3) {
+    ctx.beginPath()
+    ctx.moveTo(left, y)
+    ctx.lineTo(left + bw, y)
+    ctx.stroke()
+  }
+  ctx.restore()
+  // top edge highlight + bottom shade for a rounded, machined feel
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)'
+  ctx.lineWidth = w * 0.005
+  ctx.beginPath()
+  ctx.moveTo(left + rad, top + ctx.lineWidth)
+  ctx.lineTo(left + bw - rad, top + ctx.lineWidth)
+  ctx.stroke()
+  ctx.strokeStyle = 'rgba(0,0,0,0.16)'
+  roundRect(ctx, left, top, bw, bh, rad)
+  ctx.stroke()
+
+  // --- top deck: optical viewfinder, mic holes, zoom rocker, shutter ---
+  // viewfinder window (recessed dark glass with a glint)
+  const vfx = left + w * 0.05
+  const vfy = top + topH * 0.24
+  const vfw = w * 0.2
+  const vfh = topH * 0.4
+  ctx.fillStyle = '#2b2e33'
+  roundRect(ctx, vfx, vfy, vfw, vfh, vfh * 0.18)
+  ctx.fill()
+  const vfg = ctx.createLinearGradient(vfx, vfy, vfx + vfw, vfy + vfh)
+  vfg.addColorStop(0, 'rgba(150,180,210,0.55)')
+  vfg.addColorStop(0.5, 'rgba(40,50,60,0.1)')
+  vfg.addColorStop(1, 'rgba(20,24,30,0.5)')
+  ctx.fillStyle = vfg
+  roundRect(ctx, vfx, vfy, vfw, vfh, vfh * 0.18)
+  ctx.fill()
+  // mic / speaker holes
+  ctx.fillStyle = 'rgba(60,64,70,0.6)'
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath()
+    ctx.arc(left + w * 0.33 + i * w * 0.028, top + topH * 0.42, w * 0.006, 0, TAU)
+    ctx.fill()
+  }
+  // shutter button (raised metal cylinder) + zoom rocker around it
+  const shx = w / 2 + ctrlW * 0.52
+  const shy = top + topH * 0.46
+  ctx.fillStyle = '#8b8f95'
+  ctx.beginPath()
+  ctx.arc(shx, shy, topH * 0.34, 0, TAU)
+  ctx.fill()
+  const sht = ctx.createRadialGradient(shx, shy - topH * 0.1, topH * 0.04, shx, shy, topH * 0.28)
+  sht.addColorStop(0, '#fbfcfd')
+  sht.addColorStop(0.6, '#c9ccd1')
+  sht.addColorStop(1, '#8d9197')
+  ctx.fillStyle = sht
+  ctx.beginPath()
+  ctx.arc(shx, shy, topH * 0.26, 0, TAU)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+  ctx.lineWidth = w * 0.003
+  ctx.stroke()
+
+  // --- LCD: recessed black bezel, inset shadow, photo, glass glare ---
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'
+  ctx.shadowBlur = b * 0.5
+  ctx.fillStyle = '#141416'
+  roundRect(ctx, -w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b, b * 0.35)
+  ctx.fill()
+  ctx.restore()
+  // thin inner bezel rim
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'
   ctx.lineWidth = w * 0.004
+  roundRect(ctx, -w / 2 - b * 0.5, -h / 2 - b * 0.5, w + b, h + b, b * 0.25)
   ctx.stroke()
-
-  // top: viewfinder + shutter
-  ctx.fillStyle = '#4a4d52'
-  ctx.fillRect(left + w * 0.06, top + topH * 0.22, w * 0.16, topH * 0.42)
-  ctx.fillStyle = '#7f848b'
-  ctx.beginPath()
-  ctx.arc(w / 2 + ctrlW * 0.55, top + topH * 0.5, topH * 0.26, 0, TAU)
-  ctx.fill()
-  ctx.fillStyle = '#5a5e64'
-  ctx.font = `${topH * 0.32}px Arial, sans-serif`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('W      T', w / 2 + ctrlW * 0.08, top + topH * 0.5)
-
-  // LCD bezel + photo
-  ctx.fillStyle = '#1c1c1e'
-  ctx.fillRect(-w / 2 - b * 0.6, -h / 2 - b * 0.6, w + b * 1.2, h + b * 1.2)
   draw()
-  ctx.fillStyle = '#6b6e73'
-  ctx.font = `${h * 0.05}px Arial, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.fillText('SCRL', 0, h / 2 + botH * 0.5)
-
-  // controls on the right
-  const cx = w / 2 + ctrlW * 0.52
-  // mode dial
-  ctx.fillStyle = '#9a9da2'
+  // subtle screen glare across the photo (glossy LCD)
+  ctx.save()
   ctx.beginPath()
-  ctx.arc(cx, -h * 0.22, w * 0.1, 0, TAU)
+  ctx.rect(-w / 2, -h / 2, w, h)
+  ctx.clip()
+  const glare = ctx.createLinearGradient(-w / 2, -h / 2, w * 0.1, h * 0.2)
+  glare.addColorStop(0, 'rgba(255,255,255,0.16)')
+  glare.addColorStop(0.22, 'rgba(255,255,255,0.05)')
+  glare.addColorStop(0.4, 'rgba(255,255,255,0)')
+  ctx.fillStyle = glare
+  ctx.fillRect(-w / 2, -h / 2, w, h)
+  ctx.restore()
+  // on-screen UI hints (record dot + battery) for authenticity
+  ctx.fillStyle = 'rgba(255,60,60,0.9)'
+  ctx.beginPath()
+  ctx.arc(-w / 2 + w * 0.06, -h / 2 + w * 0.06, w * 0.012, 0, TAU)
   ctx.fill()
-  ctx.strokeStyle = '#6a6d72'
-  ctx.lineWidth = w * 0.008
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+  ctx.lineWidth = w * 0.006
+  roundRect(ctx, w / 2 - w * 0.11, -h / 2 + w * 0.04, w * 0.06, w * 0.032, w * 0.006)
   ctx.stroke()
-  // 4-way pad
-  ctx.fillStyle = '#bcbfc4'
-  ctx.beginPath()
-  ctx.arc(cx, h * 0.14, w * 0.13, 0, TAU)
-  ctx.fill()
-  ctx.fillStyle = '#86898e'
-  ctx.beginPath()
-  ctx.arc(cx, h * 0.14, w * 0.05, 0, TAU)
-  ctx.fill()
-  // small buttons + labels
-  ctx.fillStyle = '#8d9095'
-  for (const dy of [-h * 0.03, h * 0.33]) ctx.fillRect(cx - w * 0.14, dy, w * 0.07, h * 0.028)
-  ctx.fillStyle = '#55585d'
-  ctx.font = `${h * 0.026}px Arial, sans-serif`
+
+  // engraved brand under the screen (dark + light offset = emboss)
   ctx.textAlign = 'center'
-  ctx.fillText('MENU', cx - w * 0.05, -h * 0.04)
-  ctx.fillText('HOME', cx + w * 0.1, -h * 0.04)
+  ctx.textBaseline = 'middle'
+  ctx.font = `600 ${botH * 0.42}px Arial, sans-serif`
+  ctx.fillStyle = 'rgba(255,255,255,0.55)'
+  ctx.fillText('SCRL', 0.6, h / 2 + botH * 0.52 + 0.6)
+  ctx.fillStyle = 'rgba(70,74,80,0.95)'
+  ctx.fillText('SCRL', 0, h / 2 + botH * 0.52)
+
+  // --- right control column ---
+  // mode dial (knurled rim + radial face)
+  const dialY = -h * 0.24
+  const dialR = w * 0.11
+  ctx.fillStyle = '#83878d'
+  ctx.beginPath()
+  ctx.arc(cx, dialY, dialR, 0, TAU)
+  ctx.fill()
+  // knurling ticks
+  ctx.strokeStyle = 'rgba(40,44,50,0.5)'
+  ctx.lineWidth = w * 0.004
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * TAU
+    ctx.beginPath()
+    ctx.moveTo(cx + Math.cos(a) * dialR * 0.86, dialY + Math.sin(a) * dialR * 0.86)
+    ctx.lineTo(cx + Math.cos(a) * dialR, dialY + Math.sin(a) * dialR)
+    ctx.stroke()
+  }
+  const dialFace = ctx.createRadialGradient(cx, dialY - dialR * 0.3, dialR * 0.1, cx, dialY, dialR * 0.85)
+  dialFace.addColorStop(0, '#eef0f2')
+  dialFace.addColorStop(1, '#a9adb3')
+  ctx.fillStyle = dialFace
+  ctx.beginPath()
+  ctx.arc(cx, dialY, dialR * 0.82, 0, TAU)
+  ctx.fill()
+  // dial indicator
+  ctx.strokeStyle = '#3a3d42'
+  ctx.lineWidth = w * 0.008
+  ctx.beginPath()
+  ctx.moveTo(cx, dialY)
+  ctx.lineTo(cx, dialY - dialR * 0.7)
+  ctx.stroke()
+
+  // 4-way D-pad with raised buttons + centre OK
+  const padY = h * 0.16
+  const padR = w * 0.15
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.3)'
+  ctx.shadowBlur = w * 0.02
+  ctx.shadowOffsetY = w * 0.006
+  const ring = ctx.createRadialGradient(cx, padY - padR * 0.4, padR * 0.2, cx, padY, padR)
+  ring.addColorStop(0, '#d6d9dd')
+  ring.addColorStop(1, '#9da1a7')
+  ctx.fillStyle = ring
+  ctx.beginPath()
+  ctx.arc(cx, padY, padR, 0, TAU)
+  ctx.fill()
+  ctx.restore()
+  // cross grooves
+  ctx.strokeStyle = 'rgba(70,74,80,0.35)'
+  ctx.lineWidth = w * 0.004
+  for (const a of [0, Math.PI / 2]) {
+    ctx.beginPath()
+    ctx.moveTo(cx + Math.cos(a) * padR * 0.5, padY + Math.sin(a) * padR * 0.5)
+    ctx.lineTo(cx - Math.cos(a) * padR * 0.5, padY - Math.sin(a) * padR * 0.5)
+    ctx.stroke()
+  }
+  const okg = ctx.createRadialGradient(cx, padY - padR * 0.18, padR * 0.05, cx, padY, padR * 0.42)
+  okg.addColorStop(0, '#f0f2f4')
+  okg.addColorStop(1, '#b6babf')
+  ctx.fillStyle = okg
+  ctx.beginPath()
+  ctx.arc(cx, padY, padR * 0.4, 0, TAU)
+  ctx.fill()
+
+  // two pill buttons (play / menu) above the pad
+  ctx.fillStyle = '#9a9ea4'
+  for (const dy of [-h * 0.02, h * 0.4]) {
+    roundRect(ctx, cx - w * 0.15, padY + dy - h * 0.34, w * 0.08, h * 0.03, h * 0.015)
+    ctx.fill()
+    roundRect(ctx, cx + w * 0.07, padY + dy - h * 0.34, w * 0.08, h * 0.03, h * 0.015)
+    ctx.fill()
+  }
 }
 
 // A rounded-bump (scalloped) rectangle path.

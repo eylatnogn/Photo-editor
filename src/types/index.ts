@@ -113,6 +113,8 @@ export type ImageFrame =
   | 'scallop'
   | 'retro'
   | 'camera'
+  | 'sticker'
+  | 'rounded'
 
 export interface ImageLayer extends LayerBase {
   type: 'image'

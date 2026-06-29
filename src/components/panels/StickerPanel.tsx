@@ -23,10 +23,12 @@ const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
 ]
 
 const FRAMES: Array<{ id: ImageFrame; label: string }> = [
+  { id: 'sticker', label: 'Sticker' },
   { id: 'polaroid', label: 'Polaroid' },
   { id: 'film', label: 'Film' },
   { id: 'negative', label: 'Negative' },
   { id: 'camera', label: 'Camera' },
+  { id: 'rounded', label: 'Rounded' },
   { id: 'tape', label: 'Taped' },
   { id: 'white', label: 'Border' },
   { id: 'scallop', label: 'Scallop' },
@@ -58,10 +60,16 @@ function FrameThumb({ frame, sample }: { frame: ImageFrame; sample: HTMLCanvasEl
     ctx.clearRect(0, 0, c.width, c.height)
     if (!sample) return
     ctx.save()
-    ctx.translate(c.width / 2, c.height / 2)
-    const pw = c.width * 0.6
-    const ph = pw * 0.75
-    drawFramedImage(ctx, sample, pw, ph, frame)
+    // The camera frame extends to the right/top, so shrink + shift it to fit.
+    if (frame === 'camera') {
+      ctx.translate(c.width * 0.42, c.height * 0.54)
+      const pw = c.width * 0.42
+      drawFramedImage(ctx, sample, pw, pw * 0.75, frame)
+    } else {
+      ctx.translate(c.width / 2, c.height / 2)
+      const pw = c.width * 0.58
+      drawFramedImage(ctx, sample, pw, pw * 0.75, frame)
+    }
     ctx.restore()
   }, [frame, sample])
   return <canvas ref={ref} width={108} height={108} className="frame-thumb-canvas" />
