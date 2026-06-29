@@ -40,6 +40,27 @@ function setAspectCrop(ratio: number | null, srcAspect: number) {
   }
 }
 
+const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v)
+type Crop = EditorDocument['transform']['crop']
+
+// The largest centred crop of the current crop's shape — i.e. zoom = 1.
+function fitOf(crop: Crop) {
+  const a = crop.width / crop.height // normalized aspect (w/h)
+  return a >= 1 ? { W: 1, H: 1 / a } : { W: a, H: 1 }
+}
+function cropZoom(crop: Crop) {
+  return fitOf(crop).W / crop.width
+}
+// Zoom into the current crop's centre while keeping its aspect ratio.
+function zoomCrop(crop: Crop, z: number): Crop {
+  const { W, H } = fitOf(crop)
+  const w = W / z
+  const h = H / z
+  const cx = crop.x + crop.width / 2
+  const cy = crop.y + crop.height / 2
+  return { x: clamp(cx - w / 2, 0, 1 - w), y: clamp(cy - h / 2, 0, 1 - h), width: w, height: h }
+}
+
 export function CropPanel() {
   const transform = useEditor((s) => s.doc.transform)
   const commit = useEditor((s) => s.commit)
@@ -72,6 +93,19 @@ export function CropPanel() {
           </button>
         ))}
       </div>
+
+      <Slider
+        label="Zoom"
+        value={cropZoom(transform.crop)}
+        min={1}
+        max={5}
+        step={0.05}
+        defaultValue={1}
+        format={(v) => `${v.toFixed(1)}×`}
+        apply={(z) => (d) => {
+          d.transform.crop = zoomCrop(d.transform.crop, z)
+        }}
+      />
 
       <div className="row gap">
         <button className="btn" onClick={rotate90}>
