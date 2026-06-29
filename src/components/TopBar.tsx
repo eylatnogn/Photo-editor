@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { loadImageFromFile } from '../utils'
+import { saveCurrentProject } from '../engine/projects'
 import { Icon } from './ui/Icon'
 
 export function TopBar() {
@@ -12,6 +14,8 @@ export function TopBar() {
   const resetEdits = useEditor((s) => s.resetEdits)
   const setShowOriginal = useEditor((s) => s.setShowOriginal)
   const loadImage = useEditor((s) => s.loadImage)
+  const setDraftsOpen = useEditor((s) => s.setDraftsOpen)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   const openFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -19,6 +23,17 @@ export function TopBar() {
     const img = await loadImageFromFile(file)
     loadImage(img, file.name)
     e.target.value = ''
+  }
+
+  const saveDraft = async () => {
+    setSaveState('saving')
+    try {
+      await saveCurrentProject()
+      setSaveState('saved')
+      setTimeout(() => setSaveState('idle'), 1800)
+    } catch {
+      setSaveState('idle')
+    }
   }
 
   return (
@@ -68,6 +83,29 @@ export function TopBar() {
             </button>
             <button className="btn ghost hide-mobile" onClick={resetEdits}>
               Reset
+            </button>
+            <button
+              className={saveState === 'saved' ? 'btn saved' : 'btn'}
+              onClick={saveDraft}
+              disabled={saveState === 'saving'}
+              title="Save a draft to come back to later"
+            >
+              <span className="btn-text">
+                {saveState === 'saved' ? 'Saved' : saveState === 'saving' ? 'Saving…' : 'Save'}
+              </span>
+              <span className="btn-icon-only">
+                <Icon name="save" size={16} />
+              </span>
+            </button>
+            <button
+              className="btn"
+              onClick={() => setDraftsOpen(true)}
+              title="Open a saved draft"
+            >
+              <span className="btn-text">Drafts</span>
+              <span className="btn-icon-only">
+                <Icon name="folder" size={16} />
+              </span>
             </button>
             <label className="btn">
               <span className="btn-text">Open</span>

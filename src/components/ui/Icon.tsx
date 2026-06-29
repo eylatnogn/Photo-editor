@@ -40,6 +40,9 @@ export type IconName =
   | 'chevronUp'
   | 'chevronDown'
   | 'copy'
+  | 'save'
+  | 'trash'
+  | 'folder'
 
 interface IconProps {
   name: IconName
@@ -275,6 +278,24 @@ const PATHS: Record<IconName, JSX.Element> = {
       <rect x="9" y="9" width="11" height="11" rx="2" />
       <path d="M5 15V5a2 2 0 0 1 2-2h10" />
     </>
+  ),
+  save: (
+    <>
+      <path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
+      <path d="M8 3v5h7V3" />
+      <rect x="8" y="13" width="8" height="6" rx="1" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M4 6h16" />
+      <path d="M9 6V4h6v2" />
+      <path d="M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14" />
+      <path d="M10 10v7M14 10v7" />
+    </>
+  ),
+  folder: (
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
   ),
 }
 

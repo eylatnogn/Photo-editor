@@ -113,12 +113,25 @@ interface EditorState {
   exportMode: 'single' | 'carousel'
   carousel: { slides: number; aspect: number; offset: number }
 
+  // Saved-draft tracking + the drafts gallery overlay.
+  currentProjectId: string | null
+  draftsOpen: boolean
+
   brush: BrushSettings
   ai: AIState
 
   // --- lifecycle ---
   loadImage: (source: RenderSource, fileName: string) => void
   replaceSource: (source: RenderSource) => void
+  loadProject: (p: {
+    source: RenderSource
+    fileName: string
+    doc: EditorDocument
+    retouch: RetouchLayers
+    projectId: string
+  }) => void
+  setCurrentProjectId: (id: string | null) => void
+  setDraftsOpen: (open: boolean) => void
 
   // --- editing ---
   commit: (mutator: (doc: EditorDocument) => void) => void
@@ -205,6 +218,9 @@ export const useEditor = create<EditorState>((set, get) => ({
   exportMode: 'single',
   carousel: { slides: 3, aspect: 4 / 5, offset: 0.5 },
 
+  currentProjectId: null,
+  draftsOpen: false,
+
   brush: { color: '#ff3b30', size: 8, opacity: 1 },
   ai: { processing: false, progress: 0, stage: '', error: null },
 
@@ -226,8 +242,43 @@ export const useEditor = create<EditorState>((set, get) => ({
       actionRedo: [],
       selectedLayerId: null,
       showOriginal: false,
+      currentProjectId: null,
       ai: { processing: false, progress: 0, stage: '', error: null },
     }),
+
+  loadProject: ({ source, fileName, doc, retouch, projectId }) => {
+    // Guarantee blank retouch canvases exist even if the draft never used them.
+    const base = makeRetouch(source)
+    const layers: RetouchLayers = {
+      heal: retouch.heal ?? base.heal,
+      erase: retouch.erase ?? base.erase,
+    }
+    set({
+      source,
+      fileName,
+      hasImage: true,
+      doc,
+      past: [],
+      future: [],
+      pending: null,
+      retouch: layers,
+      retouchVersion: get().retouchVersion + 1,
+      retouchPast: [],
+      retouchFuture: [],
+      retouchPending: null,
+      actionLog: [],
+      actionRedo: [],
+      selectedLayerId: null,
+      showOriginal: false,
+      activeTool: 'adjust',
+      currentProjectId: projectId,
+      draftsOpen: false,
+      ai: { processing: false, progress: 0, stage: '', error: null },
+    })
+  },
+
+  setCurrentProjectId: (id) => set({ currentProjectId: id }),
+  setDraftsOpen: (open) => set({ draftsOpen: open }),
 
   replaceSource: (source) =>
     set({

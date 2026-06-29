@@ -19,6 +19,7 @@ import { LayersPanel } from './components/panels/LayersPanel'
 import { DrawPanel } from './components/panels/DrawPanel'
 import { AIPanel } from './components/panels/AIPanel'
 import { ExportPanel } from './components/panels/ExportPanel'
+import { DraftsModal } from './components/DraftsModal'
 
 function ActivePanel() {
   const tool = useEditor((s) => s.activeTool)
@@ -90,6 +91,7 @@ export default function App() {
     return (
       <div className="app">
         <Dropzone />
+        <DraftsModal />
       </div>
     )
   }
@@ -108,6 +110,7 @@ export default function App() {
           <ActivePanel />
         </Sheet>
       </div>
+      <DraftsModal />
     </div>
   )
 }

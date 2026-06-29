@@ -1,12 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { loadImageFromFile } from '../utils'
+import { listProjects } from '../engine/projects'
 import { Icon } from './ui/Icon'
 
 export function Dropzone() {
   const loadImage = useEditor((s) => s.loadImage)
+  const setDraftsOpen = useEditor((s) => s.setDraftsOpen)
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [draftCount, setDraftCount] = useState(0)
+
+  useEffect(() => {
+    listProjects()
+      .then((d) => setDraftCount(d.length))
+      .catch(() => undefined)
+  }, [])
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -60,6 +69,11 @@ export function Dropzone() {
           />
         </label>
         <p className="drop-hint">or drag &amp; drop an image here</p>
+        {draftCount > 0 && (
+          <button className="btn ghost resume-drafts" onClick={() => setDraftsOpen(true)}>
+            <Icon name="folder" size={16} /> Resume a draft ({draftCount})
+          </button>
+        )}
         {error && <p className="error-text">{error}</p>}
         <div className="feature-row">
           <span><Icon name="adjust" size={15} /> 20+ adjustments</span>
