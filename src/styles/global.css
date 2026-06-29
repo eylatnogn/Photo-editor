@@ -685,6 +685,23 @@ input[type='color'] {
   color: var(--danger);
 }
 
+/* ---------- Carousel preview ---------- */
+.carousel-preview {
+  display: flex;
+  gap: 3px;
+  margin: 12px 0;
+  background: var(--bg-3);
+  padding: 6px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.carousel-preview img {
+  height: 120px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
 /* ---------- AI ---------- */
 .ai-card {
   background: var(--bg-2);
