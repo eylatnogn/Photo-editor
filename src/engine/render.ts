@@ -248,9 +248,9 @@ function drawText(ctx: CanvasRenderingContext2D, layer: TextLayer, scale: number
 }
 
 // ----- Image-layer frames -----
-function drawFramedImage(
+export function drawFramedImage(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: CanvasImageSource,
   w: number,
   h: number,
   frame: import('../types').ImageFrame,
