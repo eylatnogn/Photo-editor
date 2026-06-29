@@ -22,6 +22,7 @@ export function useAddPhoto() {
       opacity: 1,
       naturalRatio: ratio,
       frame: 'none',
+      crop: { x: 0, y: 0, width: 1, height: 1 },
     })
   }
 }

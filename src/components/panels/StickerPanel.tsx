@@ -6,6 +6,7 @@ import { buildFilmStrip } from '../../engine/filmstrip'
 import { primeImage } from '../../engine/imageCache'
 import { loadImageFromFile, uid } from '../../utils'
 import { Icon } from '../ui/Icon'
+import { PhotoFraming } from '../PhotoFraming'
 import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
@@ -147,6 +148,7 @@ export function StickerPanel() {
       opacity: 1,
       naturalRatio: ratio,
       frame,
+      crop: { x: 0, y: 0, width: 1, height: 1 },
     })
   }
 
@@ -167,6 +169,7 @@ export function StickerPanel() {
       opacity: 1,
       naturalRatio: strip.width / strip.height,
       frame: 'none',
+      crop: { x: 0, y: 0, width: 1, height: 1 },
     })
   }
 
@@ -236,6 +239,16 @@ export function StickerPanel() {
 
       {selImage && (
         <div className="layer-editor">
+          <div className="row spread">
+            <label className="mini-label">Framing — drag to zoom in</label>
+            <button
+              className="btn tiny"
+              onClick={() => updateLayer(selImage.id, { crop: { x: 0, y: 0, width: 1, height: 1 } })}
+            >
+              Reset
+            </button>
+          </div>
+          <PhotoFraming layer={selImage} />
           <label className="mini-label">Frame for selected photo</label>
           <div className="row gap">
             {FRAMES.map((f) => (

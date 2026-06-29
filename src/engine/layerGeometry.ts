@@ -2,6 +2,7 @@
 // returned in canvas-bitmap pixels (the editor maps them to screen).
 
 import type { Layer, TextLayer } from '../types'
+import { imageEffectiveRatio } from '../types'
 import { measureSticker } from './stickers'
 
 export interface LayerBox {
@@ -53,7 +54,7 @@ export function layerBox(
   let h = 0
   if (layer.type === 'image') {
     w = layer.scale * canvasW
-    h = w / layer.naturalRatio
+    h = w / imageEffectiveRatio(layer)
   } else if (layer.type === 'sticker') {
     const m = measureSticker(mctx, layer.sticker, layer.scale * canvasW, layer.text)
     w = m.w

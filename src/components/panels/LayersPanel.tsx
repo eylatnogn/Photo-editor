@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { useEditor } from '../../state/editorStore'
+import { useAddPhoto } from '../../hooks/useAddPhoto'
 import { Icon } from '../ui/Icon'
 import { getSticker } from '../../engine/stickers'
 import type { Layer } from '../../types'
@@ -33,12 +35,15 @@ function layerIcon(l: Layer): Parameters<typeof Icon>[0]['name'] {
 
 export function LayersPanel() {
   const layers = useEditor((s) => s.doc.layers)
+  const source = useEditor((s) => s.source)
   const selectedId = useEditor((s) => s.selectedLayerId)
   const selectLayer = useEditor((s) => s.selectLayer)
   const updateLayer = useEditor((s) => s.updateLayer)
   const removeLayer = useEditor((s) => s.removeLayer)
   const moveLayer = useEditor((s) => s.moveLayer)
   const duplicateLayer = useEditor((s) => s.duplicateLayer)
+  const addPhoto = useAddPhoto()
+  const fileInput = useRef<HTMLInputElement>(null)
 
   const selected = layers.find((l) => l.id === selectedId)
   // Front-most (drawn last) at the top of the list.
@@ -46,12 +51,28 @@ export function LayersPanel() {
 
   return (
     <div className="panel">
-      <h3 className="panel-title">Layers</h3>
+      <div className="row spread" style={{ marginTop: 0 }}>
+        <h3 className="panel-title" style={{ margin: 0 }}>Layers</h3>
+        <button className="btn" onClick={() => fileInput.current?.click()}>
+          <Icon name="photo" size={14} /> Add image
+        </button>
+      </div>
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) addPhoto(f)
+          e.target.value = ''
+        }}
+      />
 
       {layers.length === 0 ? (
         <p className="hint">
-          No layers yet. Add text, photos or stickers and they'll stack here —
-          drag to reorder, hide, lock or delete them.
+          Add text, photos or stickers and they'll stack here — drag to reorder,
+          hide, lock or delete them. Your base photo stays locked at the bottom.
         </p>
       ) : (
         <div className="layer-stack">
@@ -130,6 +151,27 @@ export function LayersPanel() {
               </div>
             )
           })}
+          {source && (
+            <div className="lyr-row base" title="Your base photo — locked">
+              <Icon name="photo" size={15} />
+              <span className="lyr-name">Main image</span>
+              <span className="lyr-base-tag">
+                <Icon name="lock" size={13} /> Locked
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {layers.length === 0 && source && (
+        <div className="layer-stack">
+          <div className="lyr-row base" title="Your base photo — locked">
+            <Icon name="photo" size={15} />
+            <span className="lyr-name">Main image</span>
+            <span className="lyr-base-tag">
+              <Icon name="lock" size={13} /> Locked
+            </span>
+          </div>
         </div>
       )}
 

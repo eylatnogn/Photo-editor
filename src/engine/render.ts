@@ -10,7 +10,7 @@ import type {
   TextureSettings,
   FrameSettings,
 } from '../types'
-import { DEFAULT_ADJUSTMENTS } from '../types'
+import { DEFAULT_ADJUSTMENTS, imageEffectiveRatio } from '../types'
 import {
   applyAdjustments,
   applyCurves,
@@ -141,8 +141,8 @@ function drawLayers(
       ctx.translate(layer.x * width, layer.y * height)
       if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180)
       const wpx = layer.scale * width
-      const hpx = wpx / layer.naturalRatio
-      drawFramedImage(ctx, img, wpx, hpx, layer.frame)
+      const hpx = wpx / imageEffectiveRatio(layer)
+      drawFramedImage(ctx, img, wpx, hpx, layer.frame, layer.crop)
       ctx.restore()
     } else if (layer.type === 'sticker') {
       ctx.save()
@@ -247,6 +247,14 @@ function drawText(ctx: CanvasRenderingContext2D, layer: TextLayer, scale: number
   })
 }
 
+function imgDims(img: CanvasImageSource): { w: number; h: number } {
+  if (img instanceof HTMLImageElement) return { w: img.naturalWidth, h: img.naturalHeight }
+  if (typeof ImageBitmap !== 'undefined' && img instanceof ImageBitmap)
+    return { w: img.width, h: img.height }
+  const c = img as HTMLCanvasElement
+  return { w: c.width, h: c.height }
+}
+
 // ----- Image-layer frames -----
 export function drawFramedImage(
   ctx: CanvasRenderingContext2D,
@@ -254,8 +262,26 @@ export function drawFramedImage(
   w: number,
   h: number,
   frame: import('../types').ImageFrame,
+  crop?: { x: number; y: number; width: number; height: number },
 ) {
-  const draw = () => ctx.drawImage(img, -w / 2, -h / 2, w, h)
+  const draw = () => {
+    if (crop && (crop.x > 0 || crop.y > 0 || crop.width < 1 || crop.height < 1)) {
+      const { w: iw, h: ih } = imgDims(img)
+      ctx.drawImage(
+        img,
+        crop.x * iw,
+        crop.y * ih,
+        crop.width * iw,
+        crop.height * ih,
+        -w / 2,
+        -h / 2,
+        w,
+        h,
+      )
+    } else {
+      ctx.drawImage(img, -w / 2, -h / 2, w, h)
+    }
+  }
   if (frame === 'none') {
     draw()
     return

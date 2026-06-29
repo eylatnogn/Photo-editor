@@ -120,6 +120,16 @@ export interface ImageLayer extends LayerBase {
   scale: number // layer width as a fraction of the output width
   naturalRatio: number // source width / height
   frame: ImageFrame
+  // Region of the source photo shown inside the frame (normalized 0..1).
+  crop: { x: number; y: number; width: number; height: number }
+}
+
+export const FULL_CROP = { x: 0, y: 0, width: 1, height: 1 }
+
+// Displayed aspect ratio (w/h) of an image layer given its crop.
+export function imageEffectiveRatio(layer: ImageLayer): number {
+  const c = layer.crop ?? FULL_CROP
+  return layer.naturalRatio * (c.width / c.height)
 }
 
 export interface StickerLayer extends LayerBase {

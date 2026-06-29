@@ -609,6 +609,64 @@ input[type='color'] {
   border-color: #fff;
 }
 
+.btn.tiny {
+  padding: 3px 9px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+/* ---------- Photo framing (per-layer crop) ---------- */
+.pfe {
+  position: relative;
+  width: 100%;
+  max-height: 220px;
+  margin: 6px auto 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  background: #000;
+  cursor: move;
+}
+.pfe-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.pfe-crop {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+.pfe-h {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+}
+.pfe-h.nw {
+  left: -7px;
+  top: -7px;
+}
+.pfe-h.ne {
+  right: -7px;
+  top: -7px;
+}
+.pfe-h.sw {
+  left: -7px;
+  bottom: -7px;
+}
+.pfe-h.se {
+  right: -7px;
+  bottom: -7px;
+}
+
 /* ---------- Photo frames ---------- */
 .frame-grid {
   display: grid;
@@ -725,6 +783,21 @@ input[type='color'] {
 }
 .lyr-btn.danger:hover {
   color: var(--danger);
+}
+.lyr-row.base {
+  cursor: default;
+  background: var(--bg-2);
+  border-style: dashed;
+  opacity: 0.85;
+}
+.lyr-base-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
 }
 
 /* ---------- Carousel guide overlay ---------- */
