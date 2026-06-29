@@ -17,9 +17,9 @@ const MODES: Array<{ id: RetouchMode; label: string; icon: IconName; desc: strin
   },
   {
     id: 'erase',
-    label: 'Magic Eraser',
+    label: 'Magic Remove',
     icon: 'eraser',
-    desc: 'Tap an area to erase everything of a similar color (transparent). Great for clean backgrounds.',
+    desc: 'Tap an object or distraction to remove it — it’s filled in by blending the surrounding background over it. Works best against fairly even backgrounds (sky, walls, roads).',
   },
 ]
 
@@ -92,7 +92,8 @@ export function RetouchPanel() {
             onChange={(e) => setTool({ tolerance: Number(e.target.value) })}
           />
           <p className="hint">
-            Higher tolerance erases a wider range of colors per tap.
+            Higher tolerance removes a wider range of colors per tap. Tap again
+            to extend the removed area.
           </p>
         </>
       )}

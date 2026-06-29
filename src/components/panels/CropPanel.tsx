@@ -44,6 +44,8 @@ export function CropPanel() {
   const transform = useEditor((s) => s.doc.transform)
   const commit = useEditor((s) => s.commit)
   const source = useEditor((s) => s.source)
+  const setExportMode = useEditor((s) => s.setExportMode)
+  const setActiveTool = useEditor((s) => s.setActiveTool)
   const srcAspect = source
     ? (source instanceof HTMLImageElement ? source.naturalWidth : source.width) /
       (source instanceof HTMLImageElement ? source.naturalHeight : source.height)
@@ -119,6 +121,21 @@ export function CropPanel() {
       <p className="hint">
         Drag the handles on the image to fine-tune the crop region.
       </p>
+
+      <h3 className="panel-title">Carousel</h3>
+      <p className="hint">
+        Turn a wide shot into a seamless Instagram carousel — it's split into
+        slides that read as one continuous panorama when you swipe.
+      </p>
+      <button
+        className="btn primary full"
+        onClick={() => {
+          setExportMode('carousel')
+          setActiveTool('export')
+        }}
+      >
+        <Icon name="layers" size={15} /> Build a carousel
+      </button>
     </div>
   )
 }

@@ -110,6 +110,7 @@ interface EditorState {
   showOriginal: boolean
   selectedLayerId: string | null
   panelOpen: boolean
+  exportMode: 'single' | 'carousel'
 
   brush: BrushSettings
   ai: AIState
@@ -143,6 +144,7 @@ interface EditorState {
   setShowOriginal: (show: boolean) => void
   selectLayer: (id: string | null) => void
   setPanelOpen: (open: boolean) => void
+  setExportMode: (mode: 'single' | 'carousel') => void
 
   // --- layers ---
   addLayer: (layer: Layer) => void
@@ -198,6 +200,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   showOriginal: false,
   selectedLayerId: null,
   panelOpen: true,
+  exportMode: 'single',
 
   brush: { color: '#ff3b30', size: 8, opacity: 1 },
   ai: { processing: false, progress: 0, stage: '', error: null },
@@ -367,6 +370,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   setShowOriginal: (show) => set({ showOriginal: show }),
   selectLayer: (id) => set({ selectedLayerId: id }),
   setPanelOpen: (open) => set({ panelOpen: open }),
+  setExportMode: (mode) => set({ exportMode: mode }),
 
   addLayer: (layer) =>
     set((s) => {

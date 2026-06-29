@@ -5,6 +5,7 @@ import { buildCarousel } from '../../engine/carousel'
 import { canvasToBlob } from '../../ai/backgroundRemoval'
 import { downloadBlob, stripExtension } from '../../utils'
 import { makeZip } from '../../utils/zip'
+import { useAddPhoto } from '../../hooks/useAddPhoto'
 import { Icon } from '../ui/Icon'
 
 type Format = 'image/png' | 'image/jpeg' | 'image/webp'
@@ -27,7 +28,9 @@ export function ExportPanel() {
   const fileName = useEditor((s) => s.fileName)
   const retouch = useEditor((s) => s.retouch)
 
-  const [mode, setMode] = useState<'single' | 'carousel'>('single')
+  const mode = useEditor((s) => s.exportMode)
+  const setMode = useEditor((s) => s.setExportMode)
+  const addPhoto = useAddPhoto()
   const [format, setFormat] = useState<Format>('image/png')
   const [quality, setQuality] = useState(0.92)
   const [scale, setScale] = useState(1)
@@ -186,8 +189,23 @@ export function ExportPanel() {
         <>
           <p className="hint">
             Splits your image into a seamless Instagram carousel — post the
-            slides in order and swiping reads as one continuous panorama.
+            slides in order and swiping reads as one continuous panorama. Add
+            more photos and arrange them across the frame to build it out.
           </p>
+
+          <label className="btn full">
+            <Icon name="photo" size={15} /> Add photo to carousel
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) addPhoto(f)
+                e.target.value = ''
+              }}
+            />
+          </label>
 
           <label className="mini-label">Slides</label>
           <div className="row gap">

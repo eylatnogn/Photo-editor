@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { renderDocument } from '../engine/render'
-import { magicErase, stampHeal, stampSmooth } from '../engine/retouch'
+import { magicHeal, stampHeal, stampSmooth } from '../engine/retouch'
 import { hitLayer } from '../engine/layerGeometry'
 import { onImageLoad } from '../engine/imageCache'
 import { LayerTransform } from './LayerTransform'
@@ -230,20 +230,16 @@ export function EditorCanvas() {
 
     if (activeTool === 'retouch') {
       const heal = retouch.heal
-      const erase = retouch.erase
       if (!heal) return
       beginRetouch()
       if (retouchTool.mode === 'erase') {
         const sample = sampleRef.current
-        if (sample && erase) {
-          const data = sample
-            .getContext('2d')!
-            .getImageData(0, 0, sample.width, sample.height)
-          magicErase(
-            erase.getContext('2d')!,
-            data,
-            n.x * erase.width,
-            n.y * erase.height,
+        if (sample) {
+          magicHeal(
+            heal.getContext('2d')!,
+            sample,
+            n.x * heal.width,
+            n.y * heal.height,
             retouchTool.tolerance,
           )
           bumpRetouch()
@@ -308,7 +304,10 @@ export function EditorCanvas() {
     if (!previewSource) return
     const n = getNorm(e)
 
-    if (retouching.current && (e.buttons & 1)) {
+    // Note: don't gate on e.buttons — touch pointer moves often report
+    // buttons === 0, which would break brush strokes on mobile. The
+    // retouching/drawing refs (set on pointerdown, cleared on up) track press.
+    if (retouching.current) {
       strokeRetouch(n)
       return
     }
@@ -343,7 +342,7 @@ export function EditorCanvas() {
       return
     }
 
-    if (drawingId.current && (e.buttons & 1)) {
+    if (drawingId.current) {
       const id = drawingId.current
       live((d) => {
         const layer = d.layers.find((l) => l.id === id)
