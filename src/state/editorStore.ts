@@ -111,6 +111,7 @@ interface EditorState {
   selectedLayerId: string | null
   panelOpen: boolean
   exportMode: 'single' | 'carousel'
+  carousel: { slides: number; aspect: number; offset: number }
 
   brush: BrushSettings
   ai: AIState
@@ -145,6 +146,7 @@ interface EditorState {
   selectLayer: (id: string | null) => void
   setPanelOpen: (open: boolean) => void
   setExportMode: (mode: 'single' | 'carousel') => void
+  setCarousel: (patch: Partial<{ slides: number; aspect: number; offset: number }>) => void
 
   // --- layers ---
   addLayer: (layer: Layer) => void
@@ -201,6 +203,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   selectedLayerId: null,
   panelOpen: true,
   exportMode: 'single',
+  carousel: { slides: 3, aspect: 4 / 5, offset: 0.5 },
 
   brush: { color: '#ff3b30', size: 8, opacity: 1 },
   ai: { processing: false, progress: 0, stage: '', error: null },
@@ -371,6 +374,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   selectLayer: (id) => set({ selectedLayerId: id }),
   setPanelOpen: (open) => set({ panelOpen: open }),
   setExportMode: (mode) => set({ exportMode: mode }),
+  setCarousel: (patch) => set((s) => ({ carousel: { ...s.carousel, ...patch } })),
 
   addLayer: (layer) =>
     set((s) => {

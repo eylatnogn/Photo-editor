@@ -36,8 +36,8 @@ export function ExportPanel() {
   const [scale, setScale] = useState(1)
   const [busy, setBusy] = useState(false)
 
-  const [slides, setSlides] = useState(3)
-  const [slideAspect, setSlideAspect] = useState(4 / 5)
+  const { slides, aspect: slideAspect, offset } = useEditor((s) => s.carousel)
+  const setCarousel = useEditor((s) => s.setCarousel)
   const [preview, setPreview] = useState<string[]>([])
 
   const ext = FORMATS.find((f) => f.id === format)!.ext
@@ -56,10 +56,10 @@ export function ExportPanel() {
       return
     }
     const comp = renderComposition()
-    const pieces = buildCarousel(comp, slides, slideAspect, 260)
+    const pieces = buildCarousel(comp, slides, slideAspect, 260, offset)
     setPreview(pieces.map((c) => c.toDataURL('image/png')))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, slides, slideAspect, doc, source, retouch])
+  }, [mode, slides, slideAspect, offset, doc, source, retouch])
 
   const exportSingle = async () => {
     if (!source || busy) return
@@ -92,7 +92,7 @@ export function ExportPanel() {
     setBusy(true)
     try {
       const comp = renderComposition()
-      const pieces = buildCarousel(comp, slides, slideAspect, 1080)
+      const pieces = buildCarousel(comp, slides, slideAspect, 1080, offset)
       const entries = await Promise.all(
         pieces.map(async (c, i) => {
           const blob = await canvasToBlob(c, format, format === 'image/png' ? undefined : quality)
@@ -213,7 +213,7 @@ export function ExportPanel() {
               <button
                 key={n}
                 className={slides === n ? 'btn chip active' : 'btn chip'}
-                onClick={() => setSlides(n)}
+                onClick={() => setCarousel({ slides: n })}
               >
                 {n}
               </button>
@@ -226,12 +226,24 @@ export function ExportPanel() {
               <button
                 key={a.label}
                 className={Math.abs(slideAspect - a.value) < 0.01 ? 'btn chip active' : 'btn chip'}
-                onClick={() => setSlideAspect(a.value)}
+                onClick={() => setCarousel({ aspect: a.value })}
               >
                 {a.label}
               </button>
             ))}
           </div>
+
+          <label className="mini-label">
+            Framing — slide the crop to choose what fits
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={offset}
+            onChange={(e) => setCarousel({ offset: Number(e.target.value) })}
+          />
 
           {preview.length > 0 && (
             <div className="carousel-preview">
@@ -242,8 +254,9 @@ export function ExportPanel() {
           )}
 
           <p className="hint">
-            {slides} slides · 1080 × {slideH}px each · downloads as a .zip
-            (post {base}-1 … {base}-{slides} in order)
+            {slides} slides · 1080 × {slideH}px each · the dashed outline on the
+            photo shows exactly what fits. Downloads as a .zip (post {base}-1 …
+            {base}-{slides} in order).
           </p>
 
           <button className="btn primary full big" onClick={exportCarousel} disabled={busy}>

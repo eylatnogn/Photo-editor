@@ -68,6 +68,11 @@ export function EditorCanvas() {
     orig: typeof doc.transform.crop
   } | null>(null)
   const drawingId = useRef<string | null>(null)
+  const layerMove = useRef<{
+    id: string
+    start: { x: number; y: number }
+    orig: { x: number; y: number }
+  } | null>(null)
 
   // Re-render when a layer image finishes decoding.
   const [imgTick, setImgTick] = useState(0)
@@ -282,21 +287,25 @@ export function EditorCanvas() {
       return
     }
 
-    // Layer tools: tap to select the topmost layer under the pointer (moving
-    // and transforming is handled by the on-canvas transform box).
+    // Layer tools: tap the topmost layer under the pointer to select it AND
+    // start moving it in the same gesture (resize/rotate use the box handles).
     if (LAYER_TOOLS.has(activeTool) && canvasRef.current) {
       const cw = canvasRef.current.width
       const ch = canvasRef.current.height
-      let hit: string | null = null
+      let hit: typeof doc.layers[number] | null = null
       for (let i = doc.layers.length - 1; i >= 0; i--) {
         const l = doc.layers[i]
         if (l.hidden || l.locked) continue
         if (hitLayer(l, n.x * cw, n.y * ch, cw, ch)) {
-          hit = l.id
+          hit = l
           break
         }
       }
-      selectLayer(hit)
+      selectLayer(hit?.id ?? null)
+      if (hit && hit.type !== 'draw') {
+        beginLive()
+        layerMove.current = { id: hit.id, start: n, orig: { x: hit.x, y: hit.y } }
+      }
     }
   }
 
@@ -350,6 +359,19 @@ export function EditorCanvas() {
       })
       return
     }
+
+    if (layerMove.current) {
+      const { id, start, orig } = layerMove.current
+      const dx = n.x - start.x
+      const dy = n.y - start.y
+      live((d) => {
+        const l = d.layers.find((x) => x.id === id)
+        if (l && l.type !== 'draw') {
+          l.x = clamp(orig.x + dx, -0.2, 1.2)
+          l.y = clamp(orig.y + dy, -0.2, 1.2)
+        }
+      })
+    }
   }
 
   const onPointerUp = () => {
@@ -364,6 +386,10 @@ export function EditorCanvas() {
     }
     if (drawingId.current) {
       drawingId.current = null
+      endLive()
+    }
+    if (layerMove.current) {
+      layerMove.current = null
       endLive()
     }
   }
@@ -387,6 +413,53 @@ export function EditorCanvas() {
         />
         {activeTool === 'crop' && <CropOverlay />}
         <LayerTransform canvasRef={canvasRef} />
+        <CarouselGuide canvasRef={canvasRef} />
+      </div>
+    </div>
+  )
+}
+
+// Dashed outline + slide dividers showing exactly what a carousel will keep.
+function CarouselGuide({
+  canvasRef,
+}: {
+  canvasRef: React.RefObject<HTMLCanvasElement>
+}) {
+  const exportMode = useEditor((s) => s.exportMode)
+  const { slides, aspect, offset } = useEditor((s) => s.carousel)
+  useEditor((s) => s.doc) // re-render when the canvas re-renders
+
+  const canvas = canvasRef.current
+  if (exportMode !== 'carousel' || !canvas || !canvas.width) return null
+  const cAspect = canvas.width / canvas.height
+  const panoAspect = slides * aspect
+  let cw = 1
+  let ch = 1
+  let left = 0
+  let top = 0
+  if (cAspect > panoAspect) {
+    cw = panoAspect / cAspect
+    left = (1 - cw) * offset
+  } else {
+    ch = cAspect / panoAspect
+    top = (1 - ch) * offset
+  }
+  const pct = (v: number) => `${v * 100}%`
+
+  return (
+    <div className="carousel-guide">
+      <div
+        className="cg-rect"
+        style={{ left: pct(left), top: pct(top), width: pct(cw), height: pct(ch) }}
+      >
+        {Array.from({ length: slides - 1 }).map((_, i) => (
+          <span key={i} className="cg-divider" style={{ left: pct((i + 1) / slides) }} />
+        ))}
+        {Array.from({ length: slides }).map((_, i) => (
+          <span key={i} className="cg-num" style={{ left: pct((i + 0.5) / slides) }}>
+            {i + 1}
+          </span>
+        ))}
       </div>
     </div>
   )

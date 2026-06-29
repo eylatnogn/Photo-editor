@@ -7,13 +7,14 @@ export function buildCarousel(
   slides: number,
   slideAspect: number, // width / height of each slide (e.g. 0.8 for 4:5)
   outW = 1080,
+  offset = 0.5, // 0..1 position of the crop along the cropped axis
 ): HTMLCanvasElement[] {
   const outH = Math.round(outW / slideAspect)
   const panoAspect = slides * slideAspect
   const W = render.width
   const H = render.height
 
-  // Center-crop the composition to the panorama aspect ratio.
+  // Crop the composition to the panorama aspect ratio, positioned by `offset`.
   let cw: number
   let ch: number
   let cx: number
@@ -21,13 +22,13 @@ export function buildCarousel(
   if (W / H > panoAspect) {
     ch = H
     cw = H * panoAspect
-    cx = (W - cw) / 2
+    cx = (W - cw) * offset
     cy = 0
   } else {
     cw = W
     ch = W / panoAspect
     cx = 0
-    cy = (H - ch) / 2
+    cy = (H - ch) * offset
   }
 
   // Scale the crop into a single full-resolution panorama, then slice it.

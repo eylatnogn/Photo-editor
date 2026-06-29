@@ -727,6 +727,40 @@ input[type='color'] {
   color: var(--danger);
 }
 
+/* ---------- Carousel guide overlay ---------- */
+.carousel-guide {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cg-rect {
+  position: absolute;
+  border: 2px dashed rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.4);
+}
+.cg-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed rgba(255, 255, 255, 0.85);
+}
+.cg-num {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 /* ---------- Carousel preview ---------- */
 .carousel-preview {
   display: flex;
