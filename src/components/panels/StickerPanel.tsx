@@ -8,6 +8,7 @@ import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
   { id: 'shapes', label: 'Shapes' },
+  { id: 'vintage', label: 'Vintage' },
   { id: 'tape', label: 'Tape' },
   { id: 'label', label: 'Labels' },
   { id: 'emoji', label: 'Emoji' },
@@ -18,7 +19,11 @@ const FRAMES: Array<{ id: ImageFrame; label: string }> = [
   { id: 'white', label: 'Border' },
   { id: 'polaroid', label: 'Polaroid' },
   { id: 'film', label: 'Film' },
+  { id: 'negative', label: 'Negative' },
   { id: 'tape', label: 'Taped' },
+  { id: 'vignette', label: 'Aged' },
+  { id: 'scallop', label: 'Scallop' },
+  { id: 'retro', label: 'Date' },
 ]
 
 const COLORS = ['#ffffff', '#000000', '#ff3b67', '#ffcc00', '#34c759', '#007aff', '#ff7eb6', '#e7d8a8']

@@ -102,7 +102,16 @@ export interface DrawLayer {
 }
 
 // Decorative photo frames for image layers.
-export type ImageFrame = 'none' | 'white' | 'polaroid' | 'film' | 'tape'
+export type ImageFrame =
+  | 'none'
+  | 'white'
+  | 'polaroid'
+  | 'film'
+  | 'tape'
+  | 'negative'
+  | 'vignette'
+  | 'scallop'
+  | 'retro'
 
 export interface ImageLayer extends LayerBase {
   type: 'image'

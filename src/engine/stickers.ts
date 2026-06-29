@@ -2,7 +2,7 @@
 // origin, filling a target width `w` (px); `measure` returns its bounding box
 // so the transform handles and hit-testing can size it.
 
-export type StickerCategory = 'shapes' | 'tape' | 'label' | 'emoji'
+export type StickerCategory = 'shapes' | 'vintage' | 'tape' | 'label' | 'emoji'
 
 export interface StickerDef {
   id: string
@@ -144,16 +144,125 @@ function roundRectPath(
   ctx.closePath()
 }
 
+// ----- Vintage stickers -----
+function drawSun(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const rays = 12
+  for (let i = 0; i < rays; i++) {
+    ctx.save()
+    ctx.rotate((i / rays) * PI2)
+    ctx.beginPath()
+    ctx.moveTo(0, -w * 0.5)
+    ctx.lineTo(w * 0.06, -w * 0.3)
+    ctx.lineTo(-w * 0.06, -w * 0.3)
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.24, 0, PI2)
+  ctx.fill()
+}
+
+function drawButterfly(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const wingW = w * 0.26
+  const wingH = w * 0.3
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.ellipse(sx * w * 0.18, -w * 0.1, wingW, wingH, sx * 0.4, 0, PI2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.ellipse(sx * w * 0.15, w * 0.16, wingW * 0.8, wingH * 0.7, sx * -0.3, 0, PI2)
+    ctx.fill()
+  }
+  ctx.fillStyle = '#3a2a1a'
+  ctx.beginPath()
+  ctx.ellipse(0, 0, w * 0.03, w * 0.28, 0, 0, PI2)
+  ctx.fill()
+  ctx.strokeStyle = '#3a2a1a'
+  ctx.lineWidth = w * 0.015
+  ctx.beginPath()
+  ctx.moveTo(0, -w * 0.22)
+  ctx.lineTo(-w * 0.1, -w * 0.4)
+  ctx.moveTo(0, -w * 0.22)
+  ctx.lineTo(w * 0.1, -w * 0.4)
+  ctx.stroke()
+}
+
+function drawFilmLabel(ctx: CanvasRenderingContext2D, w: number) {
+  const h = w / 2.6
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, h * 0.12)
+  ctx.fillStyle = '#f5c518'
+  ctx.fill()
+  ctx.fillStyle = '#e0322b'
+  ctx.fillRect(-w / 2, -h / 2, w, h * 0.2)
+  ctx.fillStyle = '#111'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `800 ${h * 0.4}px Arial, sans-serif`
+  ctx.fillText('SCRL', 0, h * 0.02)
+  ctx.font = `${h * 0.22}px Arial, sans-serif`
+  ctx.fillText('400 · 35mm', 0, h * 0.32)
+}
+
+function drawScallopTape(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  const h = w / 3
+  ctx.fillStyle = color
+  ctx.globalAlpha *= 0.62
+  const n = Math.max(3, Math.round(w / (h * 0.6)))
+  const r = w / n / 2
+  ctx.beginPath()
+  ctx.moveTo(-w / 2, -h / 2)
+  for (let i = 0; i < n; i++) ctx.arc(-w / 2 + r * (2 * i + 1), -h / 2, r, Math.PI, 0, false)
+  ctx.lineTo(w / 2, h / 2)
+  for (let i = n - 1; i >= 0; i--) ctx.arc(-w / 2 + r * (2 * i + 1), h / 2, r, 0, Math.PI, false)
+  ctx.closePath()
+  ctx.fill()
+}
+
+const DATE_REF = 100
+function dateMetrics(ctx: CanvasRenderingContext2D, text: string) {
+  ctx.font = `${DATE_REF}px "Courier New", monospace`
+  const tw = ctx.measureText(text || "'24").width
+  const padX = DATE_REF * 0.25
+  const chipW = tw + padX * 2
+  const chipH = DATE_REF * 1.3
+  return { chipW, chipH, aspect: chipW / chipH }
+}
+
+function drawDate(ctx: CanvasRenderingContext2D, w: number, text: string, color: string) {
+  const m = dateMetrics(ctx, text)
+  const scale = w / m.chipW
+  ctx.save()
+  ctx.scale(scale, scale)
+  ctx.font = `${DATE_REF}px "Courier New", monospace`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.shadowColor = 'rgba(255,150,0,0.9)'
+  ctx.shadowBlur = DATE_REF * 0.28
+  ctx.fillStyle = color || '#ffb300'
+  ctx.fillText(text || "'24 ▸", 0, 0)
+  ctx.restore()
+}
+
 export const STICKERS: StickerDef[] = [
   { id: 'star', label: 'Star', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffcc00' },
   { id: 'heart', label: 'Heart', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
   { id: 'sparkle', label: 'Sparkle', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffe66d' },
   { id: 'flower', label: 'Flower', category: 'shapes', hasColor: false, hasText: false, defaultColor: '#ff7eb6' },
   { id: 'tape', label: 'Washi tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e7d8a8', aspect: 3 },
+  { id: 'scalloptape', label: 'Scallop tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e8b9c4', aspect: 3 },
   { id: 'pin', label: 'Location pin', category: 'label', hasColor: false, hasText: true, defaultColor: '#ffffff', aspect: 3 },
+  { id: 'datestamp', label: 'Date stamp', category: 'label', hasColor: true, hasText: true, defaultColor: '#ffb300' },
+  // vintage
+  { id: 'burst', label: 'Starburst', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ffd84d' },
+  { id: 'sun', label: 'Retro sun', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff9d3c' },
+  { id: 'butterfly', label: 'Butterfly', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
+  { id: 'filmlabel', label: 'Film label', category: 'vintage', hasColor: false, hasText: false, defaultColor: '#f5c518', aspect: 2.6 },
 ]
 
-const EMOJI = ['✨', '🌸', '💖', '🔥', '⭐', '🦋', '🌈', '😎', '📷', '🍣', '🗼', '💫', '☀️', '🍜', '🫶', '🎀']
+const EMOJI = ['✨', '🌸', '💖', '🔥', '⭐', '🦋', '🌈', '😎', '📷', '🍣', '🗼', '💫', '☀️', '🍜', '🫶', '🎀', '🎞️', '📼', '📺', '🌻', '💌', '🕶️', '🪩', '📻']
 for (const e of EMOJI) {
   STICKERS.push({
     id: `emoji:${e}`,
@@ -180,6 +289,10 @@ export function measureSticker(
   const def = getSticker(id)
   if (def?.id === 'pin') {
     const m = pinMetrics(ctx, text ?? '')
+    return { w, h: w / m.aspect }
+  }
+  if (def?.id === 'datestamp') {
+    const m = dateMetrics(ctx, text ?? '')
     return { w, h: w / m.aspect }
   }
   const aspect = def?.aspect ?? 1
@@ -220,8 +333,26 @@ export function drawSticker(
     case 'tape':
       drawTape(ctx, w, color)
       break
+    case 'scalloptape':
+      drawScallopTape(ctx, w, color)
+      break
     case 'pin':
       drawPin(ctx, w, text ?? 'Location')
+      break
+    case 'datestamp':
+      drawDate(ctx, w, text ?? "'24 ▸", color)
+      break
+    case 'burst':
+      fillStar(ctx, w, 12, 0.5)
+      break
+    case 'sun':
+      drawSun(ctx, w, color)
+      break
+    case 'butterfly':
+      drawButterfly(ctx, w, color)
+      break
+    case 'filmlabel':
+      drawFilmLabel(ctx, w)
       break
   }
 }

@@ -293,24 +293,98 @@ function drawFramedImage(
     }
     return
   }
-  // film — 35mm strip look
-  const b = w * 0.12
-  ctx.fillStyle = '#0c0c0c'
-  ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
-  draw()
-  ctx.fillStyle = 'rgba(245,245,245,0.9)'
-  const holeW = b * 0.5
-  const holeH = b * 0.34
-  const gap = holeW * 1.9
-  for (let x = -w / 2; x < w / 2 - holeW; x += gap) {
-    ctx.fillRect(x, -h / 2 - b * 0.7, holeW, holeH)
-    ctx.fillRect(x, h / 2 + b * 0.7 - holeH, holeW, holeH)
+  if (frame === 'film' || frame === 'negative') {
+    // 35mm strip — black for B&W film, orange mask for a colour negative.
+    const b = w * 0.12
+    const neg = frame === 'negative'
+    ctx.fillStyle = neg ? '#a4521f' : '#0c0c0c'
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    draw()
+    ctx.fillStyle = neg ? 'rgba(20,12,6,0.85)' : 'rgba(245,245,245,0.9)'
+    const holeW = b * 0.5
+    const holeH = b * 0.34
+    const gap = holeW * 1.9
+    for (let x = -w / 2; x < w / 2 - holeW; x += gap) {
+      ctx.fillRect(x, -h / 2 - b * 0.7, holeW, holeH)
+      ctx.fillRect(x, h / 2 + b * 0.7 - holeH, holeW, holeH)
+    }
+    ctx.fillStyle = neg ? 'rgba(40,22,10,0.9)' : 'rgba(220,180,80,0.85)'
+    ctx.font = `${b * 0.42}px monospace`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(neg ? 'SCRL C-41  22A' : 'SCRL 400', -w / 2 + b * 0.2, -h / 2 - b * 0.35)
+    return
   }
-  ctx.fillStyle = 'rgba(220,180,80,0.85)'
-  ctx.font = `${b * 0.42}px monospace`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('SCRL 400', -w / 2 + b * 0.2, -h / 2 - b * 0.35)
+
+  if (frame === 'vignette') {
+    // Aged cream border with a soft dark vignette over the photo.
+    const b = w * 0.05
+    ctx.fillStyle = '#efe6d2'
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    draw()
+    const r = Math.hypot(w, h) / 2
+    const g = ctx.createRadialGradient(0, 0, r * 0.45, 0, 0, r)
+    g.addColorStop(0, 'rgba(40,24,12,0)')
+    g.addColorStop(1, 'rgba(30,18,8,0.55)')
+    ctx.fillStyle = g
+    ctx.fillRect(-w / 2, -h / 2, w, h)
+    // warm overlay for a faded look
+    ctx.fillStyle = 'rgba(210,180,120,0.12)'
+    ctx.fillRect(-w / 2, -h / 2, w, h)
+    return
+  }
+
+  if (frame === 'scallop') {
+    // Classic deckle / scalloped white print border.
+    const b = w * 0.06
+    ctx.fillStyle = '#fcfbf6'
+    scallopPath(ctx, -w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b, b * 0.9)
+    ctx.fill()
+    draw()
+    return
+  }
+
+  if (frame === 'retro') {
+    // Thick white border with a 90s orange date stamp.
+    const b = w * 0.045
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    draw()
+    ctx.save()
+    ctx.font = `${w * 0.06}px "Courier New", monospace`
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'bottom'
+    ctx.shadowColor = 'rgba(255,140,0,0.9)'
+    ctx.shadowBlur = w * 0.02
+    ctx.fillStyle = '#ffb300'
+    ctx.fillText("'24 10 14", w / 2 - w * 0.03, h / 2 - w * 0.03)
+    ctx.restore()
+    return
+  }
+
+  draw()
+}
+
+// A rounded-bump (scalloped) rectangle path.
+function scallopPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  const nx = Math.max(2, Math.round(w / (r * 2)))
+  const ny = Math.max(2, Math.round(h / (r * 2)))
+  const sx = w / nx
+  const sy = h / ny
+  ctx.beginPath()
+  ctx.moveTo(x, y + sy / 2)
+  for (let i = 0; i < nx; i++) ctx.arc(x + sx * (i + 0.5), y, sx / 2, Math.PI, 0, false)
+  for (let i = 0; i < ny; i++) ctx.arc(x + w, y + sy * (i + 0.5), sy / 2, -Math.PI / 2, Math.PI / 2, false)
+  for (let i = nx - 1; i >= 0; i--) ctx.arc(x + sx * (i + 0.5), y + h, sx / 2, 0, Math.PI, false)
+  for (let i = ny - 1; i >= 0; i--) ctx.arc(x, y + sy * (i + 0.5), sy / 2, Math.PI / 2, -Math.PI / 2, false)
+  ctx.closePath()
 }
 
 export interface RenderResult {
