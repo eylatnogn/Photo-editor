@@ -9,6 +9,7 @@ import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
   { id: 'shapes', label: 'Shapes' },
   { id: 'vintage', label: 'Vintage' },
+  { id: 'doodle', label: 'Doodles' },
   { id: 'tape', label: 'Tape' },
   { id: 'label', label: 'Labels' },
   { id: 'emoji', label: 'Emoji' },
@@ -20,6 +21,7 @@ const FRAMES: Array<{ id: ImageFrame; label: string }> = [
   { id: 'polaroid', label: 'Polaroid' },
   { id: 'film', label: 'Film' },
   { id: 'negative', label: 'Negative' },
+  { id: 'camera', label: 'Camera' },
   { id: 'tape', label: 'Taped' },
   { id: 'vignette', label: 'Aged' },
   { id: 'scallop', label: 'Scallop' },
@@ -59,16 +61,20 @@ export function StickerPanel() {
   const addPhoto = async (file: File) => {
     const img = await loadImageFromFile(file)
     primeImage(img.src, img)
+    const ratio = img.naturalWidth / img.naturalHeight
+    // Size so a portrait photo doesn't tower over the canvas; leaves room for
+    // a frame to be visible around it.
+    const scale = Math.max(0.18, Math.min(0.45, 0.55 * ratio))
     addLayer({
       id: uid('image'),
       type: 'image',
       src: img.src,
       x: 0.5,
       y: 0.5,
-      scale: 0.5,
+      scale,
       rotation: 0,
       opacity: 1,
-      naturalRatio: img.naturalWidth / img.naturalHeight,
+      naturalRatio: ratio,
       frame: 'none',
     })
   }

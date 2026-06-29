@@ -294,25 +294,43 @@ function drawFramedImage(
     return
   }
   if (frame === 'film' || frame === 'negative') {
-    // 35mm strip — black for B&W film, orange mask for a colour negative.
-    const b = w * 0.12
+    // 35mm frame — black for B&W film, orange mask for a colour negative.
+    const b = w * 0.13
     const neg = frame === 'negative'
     ctx.fillStyle = neg ? '#a4521f' : '#0c0c0c'
-    ctx.fillRect(-w / 2 - b, -h / 2 - b, w + 2 * b, h + 2 * b)
+    ctx.fillRect(-w / 2 - b, -h / 2 - b * 1.4, w + 2 * b, h + 2 * b * 1.4)
     draw()
-    ctx.fillStyle = neg ? 'rgba(20,12,6,0.85)' : 'rgba(245,245,245,0.9)'
-    const holeW = b * 0.5
-    const holeH = b * 0.34
+    // sprocket holes
+    ctx.fillStyle = neg ? 'rgba(20,12,6,0.85)' : 'rgba(238,236,228,0.92)'
+    const holeW = b * 0.42
+    const holeH = b * 0.5
     const gap = holeW * 1.9
     for (let x = -w / 2; x < w / 2 - holeW; x += gap) {
-      ctx.fillRect(x, -h / 2 - b * 0.7, holeW, holeH)
-      ctx.fillRect(x, h / 2 + b * 0.7 - holeH, holeW, holeH)
+      ctx.fillRect(x, -h / 2 - b * 1.05, holeW, holeH)
+      ctx.fillRect(x, h / 2 + b * 1.05 - holeH, holeW, holeH)
     }
-    ctx.fillStyle = neg ? 'rgba(40,22,10,0.9)' : 'rgba(220,180,80,0.85)'
-    ctx.font = `${b * 0.42}px monospace`
-    ctx.textAlign = 'left'
+    // frame markings: "SCRL 400" at the corners, a frame number, sprocket arrow
+    const orange = neg ? 'rgba(60,32,14,0.95)' : 'rgba(226,150,40,0.95)'
+    ctx.fillStyle = orange
+    ctx.font = `${b * 0.4}px "Courier New", monospace`
     ctx.textBaseline = 'middle'
-    ctx.fillText(neg ? 'SCRL C-41  22A' : 'SCRL 400', -w / 2 + b * 0.2, -h / 2 - b * 0.35)
+    ctx.textAlign = 'left'
+    ctx.fillText('SCRL 400', -w / 2 + b * 0.1, -h / 2 - b * 0.55)
+    ctx.textAlign = 'right'
+    ctx.fillText('SCRL 400', w / 2 - b * 0.1, -h / 2 - b * 0.55)
+    ctx.textAlign = 'center'
+    ctx.font = `bold ${b * 0.5}px "Courier New", monospace`
+    ctx.fillText('48', 0, -h / 2 - b * 0.55)
+    ctx.textAlign = 'left'
+    ctx.font = `${b * 0.42}px "Courier New", monospace`
+    ctx.fillText('▸ 6', -w / 2 + b * 0.1, h / 2 + b * 0.6)
+    ctx.textAlign = 'right'
+    ctx.fillText('6 ▸', w / 2 - b * 0.1, h / 2 + b * 0.6)
+    return
+  }
+
+  if (frame === 'camera') {
+    drawCameraFrame(ctx, w, h, draw)
     return
   }
 
@@ -363,6 +381,87 @@ function drawFramedImage(
   }
 
   draw()
+}
+
+// A stylised point-and-shoot camera: the photo is the LCD, with a body and
+// controls drawn around it (extends to the right of and above the photo).
+function drawCameraFrame(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  draw: () => void,
+) {
+  const TAU = Math.PI * 2
+  const b = w * 0.035
+  const ctrlW = w * 0.46
+  const topH = h * 0.16
+  const botH = h * 0.1
+  const left = -w / 2 - b
+  const top = -h / 2 - topH
+  const bw = w + b + ctrlW + b
+  const bh = h + topH + botH
+
+  // body
+  const g = ctx.createLinearGradient(0, top, 0, top + bh)
+  g.addColorStop(0, '#eceef0')
+  g.addColorStop(0.5, '#cdd0d4')
+  g.addColorStop(1, '#aeb2b7')
+  ctx.fillStyle = g
+  roundRect(ctx, left, top, bw, bh, w * 0.05)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.lineWidth = w * 0.004
+  ctx.stroke()
+
+  // top: viewfinder + shutter
+  ctx.fillStyle = '#4a4d52'
+  ctx.fillRect(left + w * 0.06, top + topH * 0.22, w * 0.16, topH * 0.42)
+  ctx.fillStyle = '#7f848b'
+  ctx.beginPath()
+  ctx.arc(w / 2 + ctrlW * 0.55, top + topH * 0.5, topH * 0.26, 0, TAU)
+  ctx.fill()
+  ctx.fillStyle = '#5a5e64'
+  ctx.font = `${topH * 0.32}px Arial, sans-serif`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('W      T', w / 2 + ctrlW * 0.08, top + topH * 0.5)
+
+  // LCD bezel + photo
+  ctx.fillStyle = '#1c1c1e'
+  ctx.fillRect(-w / 2 - b * 0.6, -h / 2 - b * 0.6, w + b * 1.2, h + b * 1.2)
+  draw()
+  ctx.fillStyle = '#6b6e73'
+  ctx.font = `${h * 0.05}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.fillText('SCRL', 0, h / 2 + botH * 0.5)
+
+  // controls on the right
+  const cx = w / 2 + ctrlW * 0.52
+  // mode dial
+  ctx.fillStyle = '#9a9da2'
+  ctx.beginPath()
+  ctx.arc(cx, -h * 0.22, w * 0.1, 0, TAU)
+  ctx.fill()
+  ctx.strokeStyle = '#6a6d72'
+  ctx.lineWidth = w * 0.008
+  ctx.stroke()
+  // 4-way pad
+  ctx.fillStyle = '#bcbfc4'
+  ctx.beginPath()
+  ctx.arc(cx, h * 0.14, w * 0.13, 0, TAU)
+  ctx.fill()
+  ctx.fillStyle = '#86898e'
+  ctx.beginPath()
+  ctx.arc(cx, h * 0.14, w * 0.05, 0, TAU)
+  ctx.fill()
+  // small buttons + labels
+  ctx.fillStyle = '#8d9095'
+  for (const dy of [-h * 0.03, h * 0.33]) ctx.fillRect(cx - w * 0.14, dy, w * 0.07, h * 0.028)
+  ctx.fillStyle = '#55585d'
+  ctx.font = `${h * 0.026}px Arial, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.fillText('MENU', cx - w * 0.05, -h * 0.04)
+  ctx.fillText('HOME', cx + w * 0.1, -h * 0.04)
 }
 
 // A rounded-bump (scalloped) rectangle path.

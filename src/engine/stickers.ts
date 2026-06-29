@@ -2,7 +2,7 @@
 // origin, filling a target width `w` (px); `measure` returns its bounding box
 // so the transform handles and hit-testing can size it.
 
-export type StickerCategory = 'shapes' | 'vintage' | 'tape' | 'label' | 'emoji'
+export type StickerCategory = 'shapes' | 'vintage' | 'doodle' | 'tape' | 'label' | 'emoji'
 
 export interface StickerDef {
   id: string
@@ -246,11 +246,255 @@ function drawDate(ctx: CanvasRenderingContext2D, w: number, text: string, color:
   ctx.restore()
 }
 
+// ----- Extra shape / doodle stickers -----
+function poly(ctx: CanvasRenderingContext2D, pts: number[][]) {
+  ctx.beginPath()
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
+  ctx.closePath()
+  ctx.fill()
+}
+
+function drawRing(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = w * 0.13
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.42, 0, PI2)
+  ctx.stroke()
+}
+function drawSquareSticker(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const r = w * 0.12
+  roundRectPath(ctx, -w * 0.42, -w * 0.42, w * 0.84, w * 0.84, r)
+  ctx.fill()
+}
+function drawTriangle(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  poly(ctx, [[0, -w * 0.46], [w * 0.44, w * 0.36], [-w * 0.44, w * 0.36]])
+}
+function drawDiamond(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  poly(ctx, [[0, -w * 0.48], [w * 0.36, 0], [0, w * 0.48], [-w * 0.36, 0]])
+}
+function drawCross(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const a = w * 0.16
+  const b = w * 0.46
+  ctx.fillRect(-a, -b, a * 2, b * 2)
+  ctx.fillRect(-b, -a, b * 2, a * 2)
+}
+function drawLightning(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  poly(ctx, [
+    [w * 0.12, -w * 0.48],
+    [-w * 0.28, w * 0.08],
+    [-w * 0.02, w * 0.08],
+    [-w * 0.12, w * 0.48],
+    [w * 0.3, -w * 0.12],
+    [w * 0.03, -w * 0.12],
+  ])
+}
+function drawCloud(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const y = w * 0.06
+  ctx.beginPath()
+  ctx.arc(-w * 0.22, y, w * 0.16, 0, PI2)
+  ctx.arc(-w * 0.02, y - w * 0.1, w * 0.2, 0, PI2)
+  ctx.arc(w * 0.22, y, w * 0.17, 0, PI2)
+  ctx.fill()
+  ctx.fillRect(-w * 0.38, y, w * 0.76, w * 0.18)
+}
+function drawMoon(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.45, 0, PI2)
+  ctx.arc(w * 0.18, -w * 0.08, w * 0.38, 0, PI2, true)
+  ctx.fill('evenodd')
+}
+function drawSmiley(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.46, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = '#1a1a1a'
+  ctx.beginPath()
+  ctx.arc(-w * 0.16, -w * 0.1, w * 0.06, 0, PI2)
+  ctx.arc(w * 0.16, -w * 0.1, w * 0.06, 0, PI2)
+  ctx.fill()
+  ctx.strokeStyle = '#1a1a1a'
+  ctx.lineWidth = w * 0.06
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.arc(0, w * 0.02, w * 0.22, 0.15 * Math.PI, 0.85 * Math.PI)
+  ctx.stroke()
+}
+function drawPeace(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = w * 0.07
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.42, 0, PI2)
+  ctx.moveTo(0, -w * 0.42)
+  ctx.lineTo(0, w * 0.42)
+  ctx.moveTo(0, 0)
+  ctx.lineTo(-w * 0.3, w * 0.3)
+  ctx.moveTo(0, 0)
+  ctx.lineTo(w * 0.3, w * 0.3)
+  ctx.stroke()
+}
+function drawDaisy(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * PI2
+    ctx.save()
+    ctx.rotate(a)
+    ctx.beginPath()
+    ctx.ellipse(0, -w * 0.28, w * 0.1, w * 0.22, 0, 0, PI2)
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.fillStyle = '#ffd84d'
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.14, 0, PI2)
+  ctx.fill()
+}
+function drawCassette(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  const h = w * 0.66
+  ctx.fillStyle = color
+  roundRectPath(ctx, -w / 2, -h / 2, w, h, w * 0.06)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  roundRectPath(ctx, -w * 0.38, -h * 0.36, w * 0.76, h * 0.34, w * 0.03)
+  ctx.fill()
+  ctx.fillStyle = '#222'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.17, h * 0.12, w * 0.1, 0, PI2)
+    ctx.fill()
+    ctx.fillStyle = '#888'
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.17, h * 0.12, w * 0.04, 0, PI2)
+    ctx.fill()
+    ctx.fillStyle = '#222'
+  }
+}
+function drawVinyl(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = '#1a1a1a'
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.48, 0, PI2)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+  ctx.lineWidth = w * 0.01
+  for (let r = 0.2; r < 0.46; r += 0.06) {
+    ctx.beginPath()
+    ctx.arc(0, 0, w * r, 0, PI2)
+    ctx.stroke()
+  }
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.15, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = '#1a1a1a'
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.025, 0, PI2)
+  ctx.fill()
+}
+function drawBow(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(sx * w * 0.42, -w * 0.26)
+    ctx.lineTo(sx * w * 0.42, w * 0.26)
+    ctx.closePath()
+    ctx.fill()
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.1, 0, PI2)
+  ctx.fill()
+}
+function drawSpeech(ctx: CanvasRenderingContext2D, w: number, color: string, text?: string) {
+  const h = w * 0.62
+  ctx.fillStyle = color
+  roundRectPath(ctx, -w / 2, -h / 2, w, h * 0.82, h * 0.22)
+  ctx.fill()
+  poly(ctx, [
+    [-w * 0.12, h * 0.3],
+    [-w * 0.28, h * 0.5],
+    [w * 0.04, h * 0.3],
+  ])
+  if (text) {
+    ctx.fillStyle = '#1a1a1a'
+    ctx.font = `600 ${h * 0.3}px Inter, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, 0, -h * 0.04)
+  }
+}
+function drawBanner(ctx: CanvasRenderingContext2D, w: number, color: string, text?: string) {
+  const h = w / 3.4
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.moveTo(-w / 2, -h / 2)
+  ctx.lineTo(w / 2, -h / 2)
+  ctx.lineTo(w / 2 - h * 0.5, 0)
+  ctx.lineTo(w / 2, h / 2)
+  ctx.lineTo(-w / 2, h / 2)
+  ctx.lineTo(-w / 2 + h * 0.5, 0)
+  ctx.closePath()
+  ctx.fill()
+  if (text) {
+    ctx.fillStyle = '#fff'
+    ctx.font = `700 ${h * 0.5}px Inter, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(text, 0, 0)
+  }
+}
+function drawArrowDoodle(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = w * 0.06
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.45, w * 0.2)
+  ctx.bezierCurveTo(-w * 0.1, -w * 0.4, w * 0.2, -w * 0.3, w * 0.4, w * 0.05)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(w * 0.4, w * 0.05)
+  ctx.lineTo(w * 0.18, w * 0.02)
+  ctx.moveTo(w * 0.4, w * 0.05)
+  ctx.lineTo(w * 0.34, -w * 0.18)
+  ctx.stroke()
+}
+function drawSquiggle(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = w * 0.07
+  ctx.lineCap = 'round'
+  const n = 4
+  const r = w / n / 2
+  ctx.beginPath()
+  ctx.moveTo(-w / 2, 0)
+  for (let i = 0; i < n; i++) {
+    ctx.arc(-w / 2 + r * (2 * i + 1), 0, r, Math.PI, 0, i % 2 === 0)
+  }
+  ctx.stroke()
+}
+
 export const STICKERS: StickerDef[] = [
   { id: 'star', label: 'Star', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffcc00' },
   { id: 'heart', label: 'Heart', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
   { id: 'sparkle', label: 'Sparkle', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffe66d' },
   { id: 'flower', label: 'Flower', category: 'shapes', hasColor: false, hasText: false, defaultColor: '#ff7eb6' },
+  { id: 'ring', label: 'Ring', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
+  { id: 'square', label: 'Square', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#34c759' },
+  { id: 'triangle', label: 'Triangle', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#007aff' },
+  { id: 'diamond', label: 'Diamond', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#5ac8fa' },
+  { id: 'cross', label: 'Plus', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff9500' },
+  { id: 'lightning', label: 'Bolt', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffd60a' },
+  { id: 'cloud', label: 'Cloud', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#dbe7f5' },
+  { id: 'moon', label: 'Moon', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffd84d' },
+  { id: 'smiley', label: 'Smiley', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffd60a' },
+  { id: 'peace', label: 'Peace', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffffff' },
   { id: 'tape', label: 'Washi tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e7d8a8', aspect: 3 },
   { id: 'scalloptape', label: 'Scallop tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e8b9c4', aspect: 3 },
   { id: 'pin', label: 'Location pin', category: 'label', hasColor: false, hasText: true, defaultColor: '#ffffff', aspect: 3 },
@@ -260,9 +504,23 @@ export const STICKERS: StickerDef[] = [
   { id: 'sun', label: 'Retro sun', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff9d3c' },
   { id: 'butterfly', label: 'Butterfly', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
   { id: 'filmlabel', label: 'Film label', category: 'vintage', hasColor: false, hasText: false, defaultColor: '#f5c518', aspect: 2.6 },
+  { id: 'cassette', label: 'Cassette', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#7c5cff', aspect: 1.5 },
+  { id: 'vinyl', label: 'Vinyl', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff5b52' },
+  { id: 'daisy', label: 'Daisy', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ffffff' },
+  { id: 'bow', label: 'Bow', category: 'vintage', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
+  // doodles
+  { id: 'arrowdoodle', label: 'Arrow', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b30' },
+  { id: 'squiggle', label: 'Squiggle', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b30' },
+  { id: 'speech', label: 'Speech', category: 'doodle', hasColor: true, hasText: true, defaultColor: '#ffffff', aspect: 1.6 },
+  { id: 'banner', label: 'Banner', category: 'doodle', hasColor: true, hasText: true, defaultColor: '#ff3b67', aspect: 3.4 },
 ]
 
-const EMOJI = ['✨', '🌸', '💖', '🔥', '⭐', '🦋', '🌈', '😎', '📷', '🍣', '🗼', '💫', '☀️', '🍜', '🫶', '🎀', '🎞️', '📼', '📺', '🌻', '💌', '🕶️', '🪩', '📻']
+const EMOJI = [
+  '✨', '🌸', '💖', '🔥', '⭐', '🦋', '🌈', '😎', '📷', '🍣', '🗼', '💫', '☀️', '🍜', '🫶', '🎀',
+  '🎞️', '📼', '📺', '🌻', '💌', '🕶️', '🪩', '📻', '💕', '😍', '🥰', '😭', '🤍', '🖤', '❤️‍🔥', '💯',
+  '🍵', '🍓', '🍑', '🍒', '🥐', '🍷', '🍸', '🧋', '🌊', '🏝️', '✈️', '🚗', '🎡', '🎟️', '📍', '🗽',
+  '🌙', '⚡', '☁️', '❄️', '🍀', '🌹', '🌼', '🪷', '🐚', '🦢', '🐈', '🐰', '🎧', '💎', '👑', '🪐',
+]
 for (const e of EMOJI) {
   STICKERS.push({
     id: `emoji:${e}`,
@@ -353,6 +611,60 @@ export function drawSticker(
       break
     case 'filmlabel':
       drawFilmLabel(ctx, w)
+      break
+    case 'ring':
+      drawRing(ctx, w, color)
+      break
+    case 'square':
+      drawSquareSticker(ctx, w, color)
+      break
+    case 'triangle':
+      drawTriangle(ctx, w, color)
+      break
+    case 'diamond':
+      drawDiamond(ctx, w, color)
+      break
+    case 'cross':
+      drawCross(ctx, w, color)
+      break
+    case 'lightning':
+      drawLightning(ctx, w, color)
+      break
+    case 'cloud':
+      drawCloud(ctx, w, color)
+      break
+    case 'moon':
+      drawMoon(ctx, w, color)
+      break
+    case 'smiley':
+      drawSmiley(ctx, w, color)
+      break
+    case 'peace':
+      drawPeace(ctx, w, color)
+      break
+    case 'cassette':
+      drawCassette(ctx, w, color)
+      break
+    case 'vinyl':
+      drawVinyl(ctx, w, color)
+      break
+    case 'daisy':
+      drawDaisy(ctx, w, color)
+      break
+    case 'bow':
+      drawBow(ctx, w, color)
+      break
+    case 'arrowdoodle':
+      drawArrowDoodle(ctx, w, color)
+      break
+    case 'squiggle':
+      drawSquiggle(ctx, w, color)
+      break
+    case 'speech':
+      drawSpeech(ctx, w, color, text)
+      break
+    case 'banner':
+      drawBanner(ctx, w, color, text)
       break
   }
 }

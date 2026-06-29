@@ -112,6 +112,7 @@ export type ImageFrame =
   | 'vignette'
   | 'scallop'
   | 'retro'
+  | 'camera'
 
 export interface ImageLayer extends LayerBase {
   type: 'image'
