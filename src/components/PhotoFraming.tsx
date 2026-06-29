@@ -88,11 +88,12 @@ export function PhotoFraming({ layer }: { layer: ImageLayer }) {
   }
 
   const pct = (v: number) => `${v * 100}%`
+  const r = layer.naturalRatio || 1
   return (
     <div
       ref={boxRef}
       className="pfe"
-      style={{ aspectRatio: String(layer.naturalRatio) }}
+      style={{ aspectRatio: String(r), width: `min(100%, ${Math.round(200 * r)}px)` }}
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}

@@ -7,7 +7,10 @@ import { primeImage } from '../../engine/imageCache'
 import { loadImageFromFile, uid } from '../../utils'
 import { Icon } from '../ui/Icon'
 import { PhotoFraming } from '../PhotoFraming'
+import { FULL_CROP } from '../../types'
 import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
+
+const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v)
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
   { id: 'doodle', label: 'Doodles' },
@@ -173,6 +176,26 @@ export function StickerPanel() {
     })
   }
 
+  // Zoom keeps the crop centred and square-uniform so the photo isn't distorted.
+  const cropZoom = (img: ImageLayer) => {
+    const c = img.crop ?? FULL_CROP
+    return 1 / Math.max(c.width, c.height)
+  }
+  const setZoom = (img: ImageLayer, z: number) => {
+    const f = clamp(1 / z, 0.2, 1)
+    const c = img.crop ?? FULL_CROP
+    const cx = c.x + c.width / 2
+    const cy = c.y + c.height / 2
+    updateLayer(img.id, {
+      crop: {
+        x: clamp(cx - f / 2, 0, 1 - f),
+        y: clamp(cy - f / 2, 0, 1 - f),
+        width: f,
+        height: f,
+      },
+    })
+  }
+
   const addSticker = (def: StickerDef) => {
     const scale = def.category === 'emoji' ? 0.13 : (def.aspect ?? 1) > 1 ? 0.5 : 0.18
     addLayer({
@@ -191,6 +214,60 @@ export function StickerPanel() {
 
   return (
     <div className="panel">
+      {selImage && (
+        <div className="layer-editor selected-photo">
+          <div className="row spread">
+            <label className="mini-label">Editing selected photo</label>
+            <button
+              className="btn tiny"
+              onClick={() => updateLayer(selImage.id, { crop: { ...FULL_CROP } })}
+            >
+              Reset framing
+            </button>
+          </div>
+          <PhotoFraming layer={selImage} />
+          <label className="mini-label">Zoom: {cropZoom(selImage).toFixed(1)}×</label>
+          <input
+            type="range"
+            min={1}
+            max={5}
+            step={0.1}
+            value={cropZoom(selImage)}
+            onChange={(e) => setZoom(selImage, Number(e.target.value))}
+          />
+          <label className="mini-label">Size: {Math.round(selImage.scale * 100)}%</label>
+          <input
+            type="range"
+            min={0.1}
+            max={0.95}
+            step={0.01}
+            value={selImage.scale}
+            onChange={(e) => updateLayer(selImage.id, { scale: Number(e.target.value) })}
+          />
+          <label className="mini-label">Frame</label>
+          <div className="row gap">
+            {FRAMES.map((f) => (
+              <button
+                key={f.id}
+                className={selImage.frame === f.id ? 'btn chip active' : 'btn chip'}
+                onClick={() => updateLayer(selImage.id, { frame: f.id })}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <label className="mini-label">Opacity: {Math.round(selImage.opacity * 100)}%</label>
+          <input
+            type="range"
+            min={0.1}
+            max={1}
+            step={0.01}
+            value={selImage.opacity}
+            onChange={(e) => updateLayer(selImage.id, { opacity: Number(e.target.value) })}
+          />
+        </div>
+      )}
+
       <h3 className="panel-title">Photo frames</h3>
       <p className="hint">Tap a frame, pick a photo, and it drops onto your image as a movable layer.</p>
       <div className="frame-grid">
@@ -236,42 +313,6 @@ export function StickerPanel() {
           e.target.value = ''
         }}
       />
-
-      {selImage && (
-        <div className="layer-editor">
-          <div className="row spread">
-            <label className="mini-label">Framing — drag to zoom in</label>
-            <button
-              className="btn tiny"
-              onClick={() => updateLayer(selImage.id, { crop: { x: 0, y: 0, width: 1, height: 1 } })}
-            >
-              Reset
-            </button>
-          </div>
-          <PhotoFraming layer={selImage} />
-          <label className="mini-label">Frame for selected photo</label>
-          <div className="row gap">
-            {FRAMES.map((f) => (
-              <button
-                key={f.id}
-                className={selImage.frame === f.id ? 'btn chip active' : 'btn chip'}
-                onClick={() => updateLayer(selImage.id, { frame: f.id })}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <label className="mini-label">Opacity: {Math.round(selImage.opacity * 100)}%</label>
-          <input
-            type="range"
-            min={0.1}
-            max={1}
-            step={0.01}
-            value={selImage.opacity}
-            onChange={(e) => updateLayer(selImage.id, { opacity: Number(e.target.value) })}
-          />
-        </div>
-      )}
 
       <h3 className="panel-title">Stickers</h3>
       <div className="row gap">
