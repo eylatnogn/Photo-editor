@@ -4,13 +4,12 @@
 
 export type StickerCategory =
   | 'cute'
+  | 'letters'
   | 'doodle'
   | 'collage'
   | 'shapes'
-  | 'retro'
   | 'tape'
   | 'label'
-  | 'emoji'
 
 export interface StickerDef {
   id: string
@@ -151,52 +150,6 @@ function roundRectPath(
   ctx.arcTo(x, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
-}
-
-// ----- Vintage stickers -----
-function drawSun(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  ctx.fillStyle = color
-  const rays = 12
-  for (let i = 0; i < rays; i++) {
-    ctx.save()
-    ctx.rotate((i / rays) * PI2)
-    ctx.beginPath()
-    ctx.moveTo(0, -w * 0.5)
-    ctx.lineTo(w * 0.06, -w * 0.3)
-    ctx.lineTo(-w * 0.06, -w * 0.3)
-    ctx.closePath()
-    ctx.fill()
-    ctx.restore()
-  }
-  ctx.beginPath()
-  ctx.arc(0, 0, w * 0.24, 0, PI2)
-  ctx.fill()
-}
-
-function drawButterfly(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  ctx.fillStyle = color
-  const wingW = w * 0.26
-  const wingH = w * 0.3
-  for (const sx of [-1, 1]) {
-    ctx.beginPath()
-    ctx.ellipse(sx * w * 0.18, -w * 0.1, wingW, wingH, sx * 0.4, 0, PI2)
-    ctx.fill()
-    ctx.beginPath()
-    ctx.ellipse(sx * w * 0.15, w * 0.16, wingW * 0.8, wingH * 0.7, sx * -0.3, 0, PI2)
-    ctx.fill()
-  }
-  ctx.fillStyle = '#3a2a1a'
-  ctx.beginPath()
-  ctx.ellipse(0, 0, w * 0.03, w * 0.28, 0, 0, PI2)
-  ctx.fill()
-  ctx.strokeStyle = '#3a2a1a'
-  ctx.lineWidth = w * 0.015
-  ctx.beginPath()
-  ctx.moveTo(0, -w * 0.22)
-  ctx.lineTo(-w * 0.1, -w * 0.4)
-  ctx.moveTo(0, -w * 0.22)
-  ctx.lineTo(w * 0.1, -w * 0.4)
-  ctx.stroke()
 }
 
 function drawFilmLabel(ctx: CanvasRenderingContext2D, w: number) {
@@ -348,78 +301,6 @@ function drawPeace(ctx: CanvasRenderingContext2D, w: number, color: string) {
   ctx.moveTo(0, 0)
   ctx.lineTo(w * 0.3, w * 0.3)
   ctx.stroke()
-}
-function drawDaisy(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  ctx.fillStyle = color
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * PI2
-    ctx.save()
-    ctx.rotate(a)
-    ctx.beginPath()
-    ctx.ellipse(0, -w * 0.28, w * 0.1, w * 0.22, 0, 0, PI2)
-    ctx.fill()
-    ctx.restore()
-  }
-  ctx.fillStyle = '#ffd84d'
-  ctx.beginPath()
-  ctx.arc(0, 0, w * 0.14, 0, PI2)
-  ctx.fill()
-}
-function drawCassette(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  const h = w * 0.66
-  ctx.fillStyle = color
-  roundRectPath(ctx, -w / 2, -h / 2, w, h, w * 0.06)
-  ctx.fill()
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'
-  roundRectPath(ctx, -w * 0.38, -h * 0.36, w * 0.76, h * 0.34, w * 0.03)
-  ctx.fill()
-  ctx.fillStyle = '#222'
-  for (const sx of [-1, 1]) {
-    ctx.beginPath()
-    ctx.arc(sx * w * 0.17, h * 0.12, w * 0.1, 0, PI2)
-    ctx.fill()
-    ctx.fillStyle = '#888'
-    ctx.beginPath()
-    ctx.arc(sx * w * 0.17, h * 0.12, w * 0.04, 0, PI2)
-    ctx.fill()
-    ctx.fillStyle = '#222'
-  }
-}
-function drawVinyl(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  ctx.fillStyle = '#1a1a1a'
-  ctx.beginPath()
-  ctx.arc(0, 0, w * 0.48, 0, PI2)
-  ctx.fill()
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-  ctx.lineWidth = w * 0.01
-  for (let r = 0.2; r < 0.46; r += 0.06) {
-    ctx.beginPath()
-    ctx.arc(0, 0, w * r, 0, PI2)
-    ctx.stroke()
-  }
-  ctx.fillStyle = color
-  ctx.beginPath()
-  ctx.arc(0, 0, w * 0.15, 0, PI2)
-  ctx.fill()
-  ctx.fillStyle = '#1a1a1a'
-  ctx.beginPath()
-  ctx.arc(0, 0, w * 0.025, 0, PI2)
-  ctx.fill()
-}
-function drawBow(ctx: CanvasRenderingContext2D, w: number, color: string) {
-  ctx.fillStyle = color
-  for (const sx of [-1, 1]) {
-    ctx.beginPath()
-    ctx.moveTo(0, 0)
-    ctx.lineTo(sx * w * 0.42, -w * 0.26)
-    ctx.lineTo(sx * w * 0.42, w * 0.26)
-    ctx.closePath()
-    ctx.fill()
-  }
-  ctx.fillStyle = 'rgba(0,0,0,0.18)'
-  ctx.beginPath()
-  ctx.arc(0, 0, w * 0.1, 0, PI2)
-  ctx.fill()
 }
 function drawSpeech(ctx: CanvasRenderingContext2D, w: number, color: string, text?: string) {
   const h = w * 0.62
@@ -888,6 +769,54 @@ function drawMushroom(ctx: CanvasRenderingContext2D, w: number, color: string) {
   }
 }
 
+// ---------- Ransom-note magazine cut-out letters ----------
+const RANSOM_PAPERS = [
+  { bg: '#f1ece0', ink: '#1a1a1a', font: 'Georgia, serif' },
+  { bg: '#ffffff', ink: '#222222', font: '"Times New Roman", serif' },
+  { bg: '#1c1c1c', ink: '#f4f4f4', font: 'Arial, sans-serif' },
+  { bg: '#c8412f', ink: '#ffffff', font: 'Impact, sans-serif' },
+  { bg: '#3f6fb0', ink: '#ffffff', font: 'Arial, sans-serif' },
+  { bg: '#e8b93c', ink: '#222222', font: 'Georgia, serif' },
+  { bg: '#caa46a', ink: '#2a1f12', font: '"Courier New", monospace' },
+  { bg: '#d98cae', ink: '#ffffff', font: 'Georgia, serif' },
+]
+
+// Deterministic torn-edge rectangle so each scrap looks hand-cut but stable.
+function jaggedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, amp: number, seed: number) {
+  const jag = (i: number) => ((Math.sin((i + seed) * 12.9898) * 43758.5453) % 1) * amp
+  const step = Math.max(6, Math.min(w, h) / 6)
+  let i = 0
+  ctx.beginPath()
+  for (let px = x; px < x + w; px += step) ctx.lineTo(px, y + jag(i++))
+  for (let py = y; py < y + h; py += step) ctx.lineTo(x + w - jag(i++), py)
+  for (let px = x + w; px > x; px -= step) ctx.lineTo(px, y + h - jag(i++))
+  for (let py = y + h; py > y; py -= step) ctx.lineTo(x + jag(i++), py)
+  ctx.closePath()
+}
+
+function drawRansomLetter(ctx: CanvasRenderingContext2D, w: number, text: string) {
+  const ch = (text || 'A').trim().slice(0, 1) || 'A'
+  const code = ch.charCodeAt(0)
+  const v = RANSOM_PAPERS[code % RANSOM_PAPERS.length]
+  const h = w / 0.82
+  const m = w * 0.05
+  // torn paper scrap with a soft drop shadow
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.28)'
+  ctx.shadowBlur = w * 0.04
+  ctx.shadowOffsetY = w * 0.014
+  ctx.fillStyle = v.bg
+  jaggedRect(ctx, -w / 2 + m, -h / 2 + m, w - 2 * m, h - 2 * m, w * 0.05, code)
+  ctx.fill()
+  ctx.restore()
+  // printed glyph
+  ctx.fillStyle = v.ink
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `800 ${h * 0.6}px ${v.font}`
+  ctx.fillText(ch, 0, h * 0.03)
+}
+
 function drawSquiggle(ctx: CanvasRenderingContext2D, w: number, color: string) {
   ctx.strokeStyle = color
   ctx.lineWidth = w * 0.07
@@ -1174,15 +1103,6 @@ export const STICKERS: StickerDef[] = [
   { id: 'scalloptape', label: 'Scallop tape', category: 'tape', hasColor: true, hasText: false, defaultColor: '#e8b9c4', aspect: 3 },
   { id: 'pin', label: 'Location pin', category: 'label', hasColor: false, hasText: true, defaultColor: '#ffffff', defaultText: 'Location', aspect: 3 },
   { id: 'datestamp', label: 'Date stamp', category: 'label', hasColor: true, hasText: true, defaultColor: '#ffb300', defaultText: "'24 ▸" },
-  // vintage
-  // retro clip-art
-  { id: 'burst', label: 'Starburst', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ffd84d' },
-  { id: 'sun', label: 'Retro sun', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff9d3c' },
-  { id: 'butterfly', label: 'Butterfly', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
-  { id: 'cassette', label: 'Cassette', category: 'retro', hasColor: true, hasText: false, defaultColor: '#7c5cff', aspect: 1.5 },
-  { id: 'vinyl', label: 'Vinyl', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff5b52' },
-  { id: 'daisy', label: 'Daisy', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ffffff' },
-  { id: 'bow', label: 'Bow', category: 'retro', hasColor: true, hasText: false, defaultColor: '#ff8fb1' },
   // hand-drawn marker doodles
   { id: 'd_star', label: 'Star', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#1a1a1a' },
   { id: 'd_heart', label: 'Heart', category: 'doodle', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
@@ -1206,21 +1126,20 @@ export const STICKERS: StickerDef[] = [
   { id: 'banner', label: 'Banner', category: 'label', hasColor: true, hasText: true, defaultColor: '#ff3b67', defaultText: 'NEW', aspect: 3.4 },
 ]
 
-const EMOJI = [
-  '✨', '🌸', '💖', '🔥', '⭐', '🦋', '🌈', '😎', '📷', '🍣', '🗼', '💫', '☀️', '🍜', '🫶', '🎀',
-  '🎞️', '📼', '📺', '🌻', '💌', '🕶️', '🪩', '📻', '💕', '😍', '🥰', '😭', '🤍', '🖤', '❤️‍🔥', '💯',
-  '🍵', '🍓', '🍑', '🍒', '🥐', '🍷', '🍸', '🧋', '🌊', '🏝️', '✈️', '🚗', '🎡', '🎟️', '📍', '🗽',
-  '🌙', '⚡', '☁️', '❄️', '🍀', '🌹', '🌼', '🪷', '🐚', '🦢', '🐈', '🐰', '🎧', '💎', '👑', '🪐',
-]
-for (const e of EMOJI) {
+// Magazine ransom-note cut-out letters & numbers — each is a torn paper scrap
+// with a printed glyph; the paper/ink/font vary per character for an authentic
+// clipped-from-a-magazine scrapbook look.
+const RANSOM_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+for (const ch of RANSOM_CHARS) {
   STICKERS.push({
-    id: `emoji:${e}`,
-    label: e,
-    category: 'emoji',
+    id: `letter:${ch}`,
+    label: ch,
+    category: 'letters',
     hasColor: false,
-    hasText: false,
-    defaultColor: '#000',
-    emoji: e,
+    hasText: true,
+    defaultColor: '#1a1a1a',
+    defaultText: ch,
+    aspect: 0.82,
   })
 }
 
@@ -1265,6 +1184,10 @@ export function drawSticker(
     ctx.fillText(def.emoji, 0, 0)
     return
   }
+  if (id.startsWith('letter:')) {
+    drawRansomLetter(ctx, w, text ?? def.defaultText ?? id.slice(7))
+    return
+  }
   ctx.fillStyle = color
   switch (id) {
     case 'star':
@@ -1290,15 +1213,6 @@ export function drawSticker(
       break
     case 'datestamp':
       drawDate(ctx, w, text ?? "'24 ▸", color)
-      break
-    case 'burst':
-      fillStar(ctx, w, 12, 0.5)
-      break
-    case 'sun':
-      drawSun(ctx, w, color)
-      break
-    case 'butterfly':
-      drawButterfly(ctx, w, color)
       break
     case 'filmlabel':
       drawFilmLabel(ctx, w)
@@ -1332,18 +1246,6 @@ export function drawSticker(
       break
     case 'peace':
       drawPeace(ctx, w, color)
-      break
-    case 'cassette':
-      drawCassette(ctx, w, color)
-      break
-    case 'vinyl':
-      drawVinyl(ctx, w, color)
-      break
-    case 'daisy':
-      drawDaisy(ctx, w, color)
-      break
-    case 'bow':
-      drawBow(ctx, w, color)
       break
     case 'arrowdoodle':
       dArrow(ctx, w, color)

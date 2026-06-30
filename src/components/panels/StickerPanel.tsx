@@ -14,13 +14,12 @@ const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi 
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
   { id: 'cute', label: 'Cute' },
+  { id: 'letters', label: 'Letters' },
   { id: 'doodle', label: 'Doodles' },
   { id: 'collage', label: 'Collage' },
   { id: 'shapes', label: 'Shapes' },
-  { id: 'retro', label: 'Retro' },
   { id: 'tape', label: 'Tape' },
   { id: 'label', label: 'Labels' },
-  { id: 'emoji', label: 'Emoji' },
 ]
 
 const FRAMES: Array<{ id: ImageFrame; label: string }> = [
@@ -89,7 +88,8 @@ function StickerThumb({ def }: { def: StickerDef }) {
     ctx.save()
     ctx.translate(c.width / 2, c.height / 2)
     const wide = (def.aspect ?? 1) > 1
-    drawSticker(ctx, def.id, wide ? c.width * 0.92 : c.width * 0.62, def.defaultColor, def.hasText ? 'Aa' : undefined)
+    const previewText = def.hasText ? def.defaultText ?? 'Aa' : undefined
+    drawSticker(ctx, def.id, wide ? c.width * 0.92 : c.width * 0.62, def.defaultColor, previewText)
     ctx.restore()
   }, [def])
   return <canvas ref={ref} width={52} height={52} className="sticker-thumb" />
@@ -207,7 +207,7 @@ export function StickerPanel() {
   }
 
   const addSticker = (def: StickerDef) => {
-    const scale = def.category === 'emoji' ? 0.13 : (def.aspect ?? 1) > 1 ? 0.5 : 0.18
+    const scale = def.category === 'letters' ? 0.12 : (def.aspect ?? 1) > 1 ? 0.5 : 0.18
     addLayer({
       id: uid('sticker'),
       type: 'sticker',
