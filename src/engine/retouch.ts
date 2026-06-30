@@ -63,32 +63,43 @@ export function stampSmooth(
   const w = sample.width
   const h = sample.height
   const r = Math.max(3, radius)
-  const sx = Math.max(0, Math.min(w - 2 * r, x - r))
-  const sy = Math.max(0, Math.min(h - 2 * r, y - r))
+  const size = Math.ceil(2 * r)
 
-  const blurPx = Math.max(1.5, r * (0.16 + strength * 0.5))
+  // The patch must be sampled from and stamped back at the SAME image
+  // coordinates, or the blurred pixels land offset from where they came from
+  // and the image appears smeared (this matters near the borders, where the
+  // sampled region has to be clamped to stay in bounds).
+  const sx = Math.max(0, Math.min(w - size, Math.round(x - r)))
+  const sy = Math.max(0, Math.min(h - size, Math.round(y - r)))
+
+  const blurPx = Math.max(1.5, r * (0.18 + strength * 0.6))
 
   const patch = document.createElement('canvas')
-  patch.width = Math.ceil(2 * r)
-  patch.height = Math.ceil(2 * r)
+  patch.width = size
+  patch.height = size
   const pctx = patch.getContext('2d')!
 
-  // Blur the sampled region in place.
+  // Blur the sampled region. Draw it slightly oversized first so the blur near
+  // the patch edge pulls from real neighbouring pixels instead of transparency.
   pctx.filter = `blur(${blurPx}px)`
-  pctx.drawImage(sample, sx, sy, 2 * r, 2 * r, 0, 0, 2 * r, 2 * r)
+  pctx.drawImage(sample, sx, sy, size, size, 0, 0, size, size)
   pctx.filter = 'none'
 
-  // Soft circular mask so the smoothed patch blends at its edges. The core
-  // stays just under full opacity to keep a hint of the original texture.
+  // Soft circular mask centred on the cursor (not the patch centre, which can
+  // differ from the cursor near the borders). A wide, fully-opaque core makes
+  // the brushed area read as cleanly blurred — overlapping stamps just replace
+  // each other instead of layering translucent ghosts.
+  const gx = x - sx
+  const gy = y - sy
   pctx.globalCompositeOperation = 'destination-in'
-  const grad = pctx.createRadialGradient(r, r, 0, r, r, r)
-  grad.addColorStop(0, 'rgba(0,0,0,0.92)')
-  grad.addColorStop(0.6, 'rgba(0,0,0,0.8)')
+  const grad = pctx.createRadialGradient(gx, gy, 0, gx, gy, r)
+  grad.addColorStop(0, 'rgba(0,0,0,1)')
+  grad.addColorStop(0.72, 'rgba(0,0,0,1)')
   grad.addColorStop(1, 'rgba(0,0,0,0)')
   pctx.fillStyle = grad
-  pctx.fillRect(0, 0, 2 * r, 2 * r)
+  pctx.fillRect(0, 0, size, size)
 
-  healCtx.drawImage(patch, x - r, y - r)
+  healCtx.drawImage(patch, sx, sy)
 }
 
 /**
