@@ -3,13 +3,24 @@ import { uid } from '../../utils'
 import { Icon } from '../ui/Icon'
 import type { TextLayer } from '../../types'
 
-const FONTS = [
-  'Inter, sans-serif',
-  'Georgia, serif',
-  'Courier New, monospace',
-  'Impact, sans-serif',
-  'Comic Sans MS, cursive',
-  'Times New Roman, serif',
+// Curated font set — scrapbook scripts, elegant serifs, display & pixel faces
+// (loaded from Google Fonts in index.html) plus dependable system stacks.
+const FONTS: Array<{ label: string; family: string }> = [
+  { label: 'Clean Sans', family: 'Inter, sans-serif' },
+  { label: 'Handwriting', family: '"Caveat", cursive' },
+  { label: 'Script', family: '"Dancing Script", cursive' },
+  { label: 'Signature', family: '"Sacramento", cursive' },
+  { label: 'Elegant', family: '"Playfair Display", serif' },
+  { label: 'Retro Script', family: '"Lobster", cursive' },
+  { label: 'Brush', family: '"Pacifico", cursive' },
+  { label: 'Marker', family: '"Gloria Hallelujah", cursive' },
+  { label: 'Poster', family: '"Bebas Neue", sans-serif' },
+  { label: 'Chunky', family: '"Shrikhand", serif' },
+  { label: 'Pixel', family: '"Press Start 2P", monospace' },
+  { label: 'Terminal', family: '"VT323", monospace' },
+  { label: 'Classic Serif', family: 'Georgia, serif' },
+  { label: 'Typewriter', family: '"Courier New", monospace' },
+  { label: 'Impact', family: 'Impact, sans-serif' },
 ]
 
 export function TextPanel() {
@@ -31,7 +42,7 @@ export function TextPanel() {
       x: 0.5,
       y: 0.5,
       fontSize: 48,
-      fontFamily: FONTS[0],
+      fontFamily: FONTS[0].family,
       color: '#ffffff',
       bold: true,
       italic: false,
@@ -105,8 +116,8 @@ export function TextPanel() {
             }
           >
             {FONTS.map((f) => (
-              <option key={f} value={f}>
-                {f.split(',')[0]}
+              <option key={f.family} value={f.family} style={{ fontFamily: f.family }}>
+                {f.label}
               </option>
             ))}
           </select>

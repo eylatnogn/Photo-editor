@@ -115,6 +115,7 @@ export type ImageFrame =
   | 'camera'
   | 'sticker'
   | 'rounded'
+  | 'torn'
 
 export interface ImageLayer extends LayerBase {
   type: 'image'

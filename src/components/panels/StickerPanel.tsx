@@ -13,6 +13,7 @@ import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v)
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
+  { id: 'cute', label: 'Cute' },
   { id: 'doodle', label: 'Doodles' },
   { id: 'collage', label: 'Collage' },
   { id: 'shapes', label: 'Shapes' },
@@ -24,6 +25,7 @@ const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
 
 const FRAMES: Array<{ id: ImageFrame; label: string }> = [
   { id: 'sticker', label: 'Sticker' },
+  { id: 'torn', label: 'Torn paper' },
   { id: 'polaroid', label: 'Polaroid' },
   { id: 'film', label: 'Film' },
   { id: 'negative', label: 'Negative' },
@@ -112,7 +114,7 @@ export function StickerPanel() {
   const updateLayer = useEditor((s) => s.updateLayer)
   const layers = useEditor((s) => s.doc.layers)
   const selectedId = useEditor((s) => s.selectedLayerId)
-  const [cat, setCat] = useState<StickerCategory>('doodle')
+  const [cat, setCat] = useState<StickerCategory>('cute')
 
   const frameInput = useRef<HTMLInputElement>(null)
   const stripInput = useRef<HTMLInputElement>(null)

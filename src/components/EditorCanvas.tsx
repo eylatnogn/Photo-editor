@@ -139,6 +139,17 @@ export function EditorCanvas() {
   const [imgTick, setImgTick] = useState(0)
   useEffect(() => onImageLoad(() => setImgTick((t) => t + 1)), [])
 
+  // Re-render once web fonts (scrapbook scripts etc.) finish loading so text
+  // layers aren't left rendered in a fallback face.
+  useEffect(() => {
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts
+    if (!fonts) return
+    const bump = () => setImgTick((t) => t + 1)
+    fonts.ready.then(bump)
+    fonts.addEventListener?.('loadingdone', bump)
+    return () => fonts.removeEventListener?.('loadingdone', bump)
+  }, [])
+
   useEffect(() => {
     if (!source) {
       setPreviewSource(null)

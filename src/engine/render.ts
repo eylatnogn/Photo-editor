@@ -438,6 +438,38 @@ export function drawFramedImage(
     return
   }
 
+  if (frame === 'torn') {
+    // Torn-paper scrapbook mat: a white deckle-edged border with a soft shadow.
+    const b = w * 0.06
+    const ox = -w / 2 - b
+    const oy = -h / 2 - b
+    const ow = w + 2 * b
+    const oh = h + 2 * b
+    // deterministic jagged offset so the edge looks hand-torn but stable
+    const jag = (i: number, amp: number) => (Math.sin(i * 12.9898) * 43758.5453 % 1) * amp
+    const step = Math.max(8, ow / 26)
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = w * 0.045
+    ctx.shadowOffsetY = w * 0.018
+    ctx.fillStyle = '#fbfaf5'
+    ctx.beginPath()
+    let i = 0
+    for (let x = ox; x < ox + ow; x += step) { ctx.lineTo(x, oy + jag(i++, b * 0.7)); }
+    for (let y = oy; y < oy + oh; y += step) { ctx.lineTo(ox + ow - jag(i++, b * 0.7), y); }
+    for (let x = ox + ow; x > ox; x -= step) { ctx.lineTo(x, oy + oh - jag(i++, b * 0.7)); }
+    for (let y = oy + oh; y > oy; y -= step) { ctx.lineTo(ox + jag(i++, b * 0.7), y); }
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
+    // faint torn-edge shading
+    ctx.strokeStyle = 'rgba(180,170,150,0.5)'
+    ctx.lineWidth = w * 0.004
+    ctx.stroke()
+    draw()
+    return
+  }
+
   if (frame === 'camera') {
     drawCameraFrame(ctx, w, h, draw)
     return

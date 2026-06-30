@@ -3,6 +3,7 @@
 // so the transform handles and hit-testing can size it.
 
 export type StickerCategory =
+  | 'cute'
   | 'doodle'
   | 'collage'
   | 'shapes'
@@ -458,6 +459,435 @@ function drawBanner(ctx: CanvasRenderingContext2D, w: number, color: string, tex
     ctx.fillText(text, 0, 0)
   }
 }
+// ---------- Cute / scrapbook stickers ----------
+
+// Glossy puffy heart with a soft highlight.
+function drawPuffyHeart(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.save()
+  ctx.fillStyle = color
+  drawHeart(ctx, w * 0.96)
+  // inner shading for volume
+  const g = ctx.createRadialGradient(-w * 0.12, -w * 0.18, w * 0.02, 0, 0, w * 0.6)
+  g.addColorStop(0, 'rgba(255,255,255,0.55)')
+  g.addColorStop(0.4, 'rgba(255,255,255,0)')
+  g.addColorStop(1, 'rgba(0,0,0,0.12)')
+  ctx.fillStyle = g
+  drawHeart(ctx, w * 0.96)
+  // glossy spec highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'
+  ctx.beginPath()
+  ctx.ellipse(-w * 0.15, -w * 0.18, w * 0.1, w * 0.06, -0.5, 0, PI2)
+  ctx.fill()
+  ctx.restore()
+}
+
+// Heart-shaped button with two stitch holes (scrapbook craft button).
+function drawHeartButton(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  drawHeart(ctx, w * 0.96)
+  // subtle inner ring + two holes
+  ctx.fillStyle = 'rgba(0,0,0,0.16)'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.11, -w * 0.02, w * 0.05, 0, PI2)
+    ctx.fill()
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.beginPath()
+  ctx.ellipse(-w * 0.16, -w * 0.2, w * 0.08, w * 0.05, -0.5, 0, PI2)
+  ctx.fill()
+}
+
+// Faceted gem / diamond with shine — the "gems/diamonds" look.
+function drawGem(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  const top = -w * 0.34
+  const tableY = -w * 0.16
+  const tl = -w * 0.34
+  const tr = w * 0.34
+  const bx = 0
+  const by = w * 0.46
+  // crown table
+  const tableL = -w * 0.2
+  const tableR = w * 0.2
+  ctx.fillStyle = color
+  poly(ctx, [
+    [tl, top],
+    [tr, top],
+    [tr, tableY],
+    [bx, by],
+    [tl, tableY],
+  ])
+  // lighter table facet
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'
+  poly(ctx, [
+    [tableL, top],
+    [tableR, top],
+    [tableR, tableY],
+    [tableL, tableY],
+  ])
+  // facet lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'
+  ctx.lineWidth = w * 0.015
+  ctx.beginPath()
+  ctx.moveTo(tl, tableY); ctx.lineTo(tr, tableY)
+  ctx.moveTo(tableL, top); ctx.lineTo(tableL, tableY); ctx.lineTo(bx, by)
+  ctx.moveTo(tableR, top); ctx.lineTo(tableR, tableY); ctx.lineTo(bx, by)
+  ctx.moveTo(tl, tableY); ctx.lineTo(bx, by)
+  ctx.moveTo(tr, tableY); ctx.lineTo(bx, by)
+  ctx.stroke()
+  // outline
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.lineWidth = w * 0.02
+  poly(ctx, [[tl, top], [tr, top], [tr, tableY], [bx, by], [tl, tableY]])
+  ctx.stroke()
+  // sparkle glint
+  ctx.fillStyle = 'rgba(255,255,255,0.95)'
+  star4(ctx, w * 0.26, -w * 0.05, w * 0.12)
+}
+
+// Round brilliant jewel (gem variant).
+function drawJewel(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.42, 0, PI2)
+  ctx.fill()
+  // facets
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'
+  ctx.lineWidth = w * 0.015
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * PI2
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(Math.cos(a) * w * 0.42, Math.sin(a) * w * 0.42)
+    ctx.stroke()
+  }
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.22, 0, PI2)
+  ctx.stroke()
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)'
+  ctx.lineWidth = w * 0.02
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.42, 0, PI2)
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  star4(ctx, -w * 0.12, -w * 0.12, w * 0.1)
+}
+
+// Four-point sparkle/twinkle (filled), positioned at (cx,cy) with radius r.
+function star4(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  ctx.beginPath()
+  ctx.moveTo(cx, cy - r)
+  ctx.quadraticCurveTo(cx + r * 0.16, cy - r * 0.16, cx + r, cy)
+  ctx.quadraticCurveTo(cx + r * 0.16, cy + r * 0.16, cx, cy + r)
+  ctx.quadraticCurveTo(cx - r * 0.16, cy + r * 0.16, cx - r, cy)
+  ctx.quadraticCurveTo(cx - r * 0.16, cy - r * 0.16, cx, cy - r)
+  ctx.closePath()
+  ctx.fill()
+}
+
+// 5-petal cherry blossom with notched petals (pastel flower).
+function drawBlossom(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  const pr = w * 0.22
+  const dist = w * 0.24
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * PI2 - Math.PI / 2
+    const px = Math.cos(a) * dist
+    const py = Math.sin(a) * dist
+    ctx.save()
+    ctx.translate(px, py)
+    ctx.rotate(a + Math.PI / 2)
+    // heart-ish notched petal
+    ctx.beginPath()
+    ctx.moveTo(0, pr * 0.9)
+    ctx.bezierCurveTo(pr * 1.1, pr * 0.2, pr * 0.5, -pr, 0, -pr * 0.35)
+    ctx.bezierCurveTo(-pr * 0.5, -pr, -pr * 1.1, pr * 0.2, 0, pr * 0.9)
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
+  }
+  // center cluster
+  ctx.fillStyle = '#ffd84d'
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.1, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,160,60,0.8)'
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * PI2
+    ctx.beginPath()
+    ctx.arc(Math.cos(a) * w * 0.06, Math.sin(a) * w * 0.06, w * 0.018, 0, PI2)
+    ctx.fill()
+  }
+}
+
+// Flower-shaped button (craft button) with 4 stitch holes.
+function drawFlowerButton(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * PI2
+    ctx.beginPath()
+    ctx.arc(Math.cos(a) * w * 0.24, Math.sin(a) * w * 0.24, w * 0.16, 0, PI2)
+    ctx.fill()
+  }
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.26, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(0,0,0,0.16)'
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * PI2 + Math.PI / 4
+    ctx.beginPath()
+    ctx.arc(Math.cos(a) * w * 0.1, Math.sin(a) * w * 0.1, w * 0.035, 0, PI2)
+    ctx.fill()
+  }
+}
+
+// Puffy rounded star with highlight.
+function drawPuffyStar(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.save()
+  ctx.fillStyle = color
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = color
+  ctx.lineWidth = w * 0.18
+  // draw star path then stroke+fill for rounded points
+  const r = w * 0.36
+  ctx.beginPath()
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.46
+    const a = (i / 10) * PI2 - Math.PI / 2
+    const x = Math.cos(a) * rad
+    const y = Math.sin(a) * rad
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  }
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.beginPath()
+  ctx.ellipse(-w * 0.08, -w * 0.12, w * 0.09, w * 0.05, -0.5, 0, PI2)
+  ctx.fill()
+  ctx.restore()
+}
+
+// Cute bunny head (Miffy-style: white, long ears, dot eyes, x mouth).
+function drawBunny(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'
+  ctx.lineWidth = w * 0.018
+  // ears
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.ellipse(sx * w * 0.16, -w * 0.32, w * 0.1, w * 0.24, sx * 0.12, 0, PI2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  // head
+  ctx.beginPath()
+  ctx.arc(0, w * 0.08, w * 0.3, 0, PI2)
+  ctx.fill()
+  ctx.stroke()
+  // face: two dot eyes + x mouth
+  ctx.fillStyle = '#3a2b2b'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.12, w * 0.04, w * 0.028, 0, PI2)
+    ctx.fill()
+  }
+  ctx.strokeStyle = '#3a2b2b'
+  ctx.lineWidth = w * 0.02
+  ctx.lineCap = 'round'
+  const mx = 0, my = w * 0.16, s = w * 0.05
+  ctx.beginPath()
+  ctx.moveTo(mx - s, my - s); ctx.lineTo(mx + s, my + s)
+  ctx.moveTo(mx + s, my - s); ctx.lineTo(mx - s, my + s)
+  ctx.stroke()
+  // cheeks
+  ctx.fillStyle = 'rgba(255,150,170,0.6)'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.2, w * 0.13, w * 0.04, 0, PI2)
+    ctx.fill()
+  }
+}
+
+// Cute bear head.
+function drawBear(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'
+  ctx.lineWidth = w * 0.018
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.26, -w * 0.2, w * 0.12, 0, PI2)
+    ctx.fill()
+    ctx.stroke()
+  }
+  ctx.beginPath()
+  ctx.arc(0, w * 0.02, w * 0.34, 0, PI2)
+  ctx.fill()
+  ctx.stroke()
+  // inner ears
+  ctx.fillStyle = 'rgba(255,150,170,0.6)'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.26, -w * 0.2, w * 0.055, 0, PI2)
+    ctx.fill()
+  }
+  // muzzle
+  ctx.fillStyle = 'rgba(255,255,255,0.7)'
+  ctx.beginPath()
+  ctx.ellipse(0, w * 0.14, w * 0.16, w * 0.12, 0, 0, PI2)
+  ctx.fill()
+  // eyes + nose
+  ctx.fillStyle = '#3a2b2b'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.13, w * 0.0, w * 0.03, 0, PI2)
+    ctx.fill()
+  }
+  ctx.beginPath()
+  ctx.arc(0, w * 0.1, w * 0.04, 0, PI2)
+  ctx.fill()
+}
+
+// Cute cat head.
+function drawCat(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'
+  ctx.lineWidth = w * 0.018
+  // ears (triangles)
+  for (const sx of [-1, 1]) {
+    poly(ctx, [
+      [sx * w * 0.1, -w * 0.22],
+      [sx * w * 0.34, -w * 0.42],
+      [sx * w * 0.32, -w * 0.12],
+    ])
+  }
+  ctx.beginPath()
+  ctx.arc(0, w * 0.04, w * 0.32, 0, PI2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#3a2b2b'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.12, w * 0.0, w * 0.028, 0, PI2)
+    ctx.fill()
+  }
+  // nose
+  ctx.fillStyle = '#ff8fa3'
+  poly(ctx, [[-w * 0.03, w * 0.1], [w * 0.03, w * 0.1], [0, w * 0.14]])
+  // whiskers
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'
+  ctx.lineWidth = w * 0.014
+  for (const sx of [-1, 1]) {
+    for (const dy of [-0.02, 0.04]) {
+      ctx.beginPath()
+      ctx.moveTo(sx * w * 0.1, w * 0.1 + w * dy)
+      ctx.lineTo(sx * w * 0.34, w * 0.08 + w * dy * 1.6)
+      ctx.stroke()
+    }
+  }
+}
+
+// Cute ribbon bow (rounded loops + tails) — distinct from the simple bow.
+function drawRibbon(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.16)'
+  ctx.lineWidth = w * 0.016
+  // tails
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(sx * w * 0.05, w * 0.05)
+    ctx.lineTo(sx * w * 0.22, w * 0.42)
+    ctx.lineTo(sx * w * 0.04, w * 0.36)
+    ctx.closePath()
+    ctx.fill()
+  }
+  // loops
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.bezierCurveTo(sx * w * 0.18, -w * 0.34, sx * w * 0.54, -w * 0.18, sx * w * 0.44, w * 0.02)
+    ctx.bezierCurveTo(sx * w * 0.54, w * 0.2, sx * w * 0.2, w * 0.18, 0, 0)
+    ctx.closePath()
+    ctx.fill()
+  }
+  // knot
+  ctx.beginPath()
+  ctx.fillStyle = color
+  roundRectPath(ctx, -w * 0.08, -w * 0.1, w * 0.16, w * 0.2, w * 0.05)
+  ctx.fill()
+  // loop shading
+  ctx.fillStyle = 'rgba(0,0,0,0.1)'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.lineTo(sx * w * 0.28, -w * 0.04)
+    ctx.lineTo(sx * w * 0.26, w * 0.06)
+    ctx.closePath()
+    ctx.fill()
+  }
+}
+
+// Pair of cherries.
+function drawCherry(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.strokeStyle = '#5a8f3c'
+  ctx.lineWidth = w * 0.04
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.18, w * 0.16)
+  ctx.quadraticCurveTo(w * 0.02, -w * 0.36, 0, -w * 0.4)
+  ctx.moveTo(w * 0.2, w * 0.18)
+  ctx.quadraticCurveTo(w * 0.06, -w * 0.34, 0, -w * 0.4)
+  ctx.stroke()
+  // leaf
+  ctx.fillStyle = '#6bbf4a'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.12, -w * 0.4, w * 0.12, w * 0.06, -0.6, 0, PI2)
+  ctx.fill()
+  // berries
+  ctx.fillStyle = color
+  for (const cx of [-w * 0.18, w * 0.2]) {
+    ctx.beginPath()
+    ctx.arc(cx, w * 0.24, w * 0.16, 0, PI2)
+    ctx.fill()
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'
+  for (const cx of [-w * 0.18, w * 0.2]) {
+    ctx.beginPath()
+    ctx.arc(cx - w * 0.05, w * 0.18, w * 0.04, 0, PI2)
+    ctx.fill()
+  }
+}
+
+// Cute mushroom.
+function drawMushroom(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  // stem
+  ctx.fillStyle = '#f4ecd8'
+  roundRectPath(ctx, -w * 0.13, 0, w * 0.26, w * 0.4, w * 0.08)
+  ctx.fill()
+  // cap
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.4, w * 0.04)
+  ctx.quadraticCurveTo(-w * 0.4, -w * 0.4, 0, -w * 0.4)
+  ctx.quadraticCurveTo(w * 0.4, -w * 0.4, w * 0.4, w * 0.04)
+  ctx.closePath()
+  ctx.fill()
+  // spots
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  for (const [sx, sy, sr] of [[-0.18, -0.12, 0.06], [0.14, -0.18, 0.05], [0.02, -0.02, 0.05], [-0.02, -0.26, 0.035]] as const) {
+    ctx.beginPath()
+    ctx.arc(w * sx, w * sy, w * sr, 0, PI2)
+    ctx.fill()
+  }
+  // face
+  ctx.fillStyle = '#3a2b2b'
+  for (const sx of [-1, 1]) {
+    ctx.beginPath()
+    ctx.arc(sx * w * 0.1, w * 0.16, w * 0.025, 0, PI2)
+    ctx.fill()
+  }
+}
+
 function drawSquiggle(ctx: CanvasRenderingContext2D, w: number, color: string) {
   ctx.strokeStyle = color
   ctx.lineWidth = w * 0.07
@@ -712,6 +1142,20 @@ function priceTag(ctx: CanvasRenderingContext2D, w: number, color: string, text?
 }
 
 export const STICKERS: StickerDef[] = [
+  // cute / scrapbook (flowers, hearts, gems, animals)
+  { id: 'blossom', label: 'Blossom', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffb6ce' },
+  { id: 'flowerbtn', label: 'Flower button', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd1e0' },
+  { id: 'puffyheart', label: 'Puffy heart', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff6b9d' },
+  { id: 'heartbtn', label: 'Heart button', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd24d' },
+  { id: 'gem', label: 'Gem', category: 'cute', hasColor: true, hasText: false, defaultColor: '#7ec8ff' },
+  { id: 'jewel', label: 'Jewel', category: 'cute', hasColor: true, hasText: false, defaultColor: '#c89bff' },
+  { id: 'puffystar', label: 'Puffy star', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd24d' },
+  { id: 'ribbon', label: 'Ribbon bow', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff9ec2' },
+  { id: 'bunny', label: 'Bunny', category: 'cute', hasColor: true, hasText: false, defaultColor: '#fafafa' },
+  { id: 'bear', label: 'Bear', category: 'cute', hasColor: true, hasText: false, defaultColor: '#d9a86c' },
+  { id: 'cat', label: 'Cat', category: 'cute', hasColor: true, hasText: false, defaultColor: '#f4c07a' },
+  { id: 'cherry', label: 'Cherries', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff4d5e' },
+  { id: 'mushroom', label: 'Mushroom', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff6b6b' },
   { id: 'star', label: 'Star', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffcc00' },
   { id: 'heart', label: 'Heart', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
   { id: 'sparkle', label: 'Sparkle', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffe66d' },
@@ -951,6 +1395,45 @@ export function drawSticker(
       break
     case 'tag':
       priceTag(ctx, w, color, text)
+      break
+    case 'blossom':
+      drawBlossom(ctx, w, color)
+      break
+    case 'flowerbtn':
+      drawFlowerButton(ctx, w, color)
+      break
+    case 'puffyheart':
+      drawPuffyHeart(ctx, w, color)
+      break
+    case 'heartbtn':
+      drawHeartButton(ctx, w, color)
+      break
+    case 'gem':
+      drawGem(ctx, w, color)
+      break
+    case 'jewel':
+      drawJewel(ctx, w, color)
+      break
+    case 'puffystar':
+      drawPuffyStar(ctx, w, color)
+      break
+    case 'ribbon':
+      drawRibbon(ctx, w, color)
+      break
+    case 'bunny':
+      drawBunny(ctx, w, color)
+      break
+    case 'bear':
+      drawBear(ctx, w, color)
+      break
+    case 'cat':
+      drawCat(ctx, w, color)
+      break
+    case 'cherry':
+      drawCherry(ctx, w, color)
+      break
+    case 'mushroom':
+      drawMushroom(ctx, w, color)
       break
   }
 }
