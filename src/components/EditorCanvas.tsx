@@ -86,6 +86,8 @@ export function EditorCanvas() {
 
   // View transform for inspecting the preview (does NOT alter the image).
   const [view, setView] = useState({ zoom: 1, x: 0, y: 0 })
+  // Live brush-ring preview position (client coords) for retouch tools.
+  const [brushCursor, setBrushCursor] = useState<{ x: number; y: number } | null>(null)
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const pinch = useRef<{ dist: number; zoom: number; cx: number; cy: number } | null>(null)
 
@@ -431,6 +433,7 @@ export function EditorCanvas() {
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!previewSource) return
+    if (activeTool === 'retouch') setBrushCursor({ x: e.clientX, y: e.clientY })
     if (pointers.current.has(e.pointerId))
       pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
@@ -535,9 +538,18 @@ export function EditorCanvas() {
   }
 
   const cursor =
-    activeTool === 'draw' || activeTool === 'crop' || activeTool === 'retouch'
+    activeTool === 'retouch'
+      ? 'none'
+      : activeTool === 'draw' || activeTool === 'crop'
       ? 'crosshair'
       : 'default'
+
+  // On-screen brush diameter (px) for the retouch ring preview.
+  const ringSize = (() => {
+    const c = canvasRef.current
+    if (!c) return 0
+    return 2 * (retouchTool.size / 1000) * Math.max(c.clientWidth, c.clientHeight) * view.zoom
+  })()
 
   return (
     <div className="canvas-stage" ref={stageRef}>
@@ -555,11 +567,24 @@ export function EditorCanvas() {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onPointerLeave={() => setBrushCursor(null)}
         />
         {activeTool === 'crop' && <CropOverlay />}
         <LayerTransform canvasRef={canvasRef} />
         <CarouselGuide canvasRef={canvasRef} />
       </div>
+
+      {activeTool === 'retouch' && brushCursor && ringSize > 0 && (
+        <div
+          className="brush-ring"
+          style={{
+            left: brushCursor.x,
+            top: brushCursor.y,
+            width: ringSize,
+            height: ringSize,
+          }}
+        />
+      )}
 
       <div className="zoom-ctrl" role="group" aria-label="Preview zoom">
         <button

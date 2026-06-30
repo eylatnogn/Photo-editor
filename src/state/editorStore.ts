@@ -209,8 +209,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   retouchPending: null,
   retouchTool: {
     mode: 'repair',
-    size: 28,
-    strength: 0.6,
+    size: 40,
+    strength: 0.7,
     tolerance: 36,
     cloneSource: null,
   },
