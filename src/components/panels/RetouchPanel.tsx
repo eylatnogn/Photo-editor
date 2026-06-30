@@ -2,24 +2,55 @@ import { useEditor } from '../../state/editorStore'
 import type { RetouchMode } from '../../state/editorStore'
 import { Icon, type IconName } from '../ui/Icon'
 
-const MODES: Array<{ id: RetouchMode; label: string; icon: IconName; desc: string }> = [
+interface ToolDef {
+  id: RetouchMode
+  label: string
+  icon: IconName
+  desc: string
+}
+
+const TOOLS: ToolDef[] = [
   {
-    id: 'cleanup',
-    label: 'Cleanup',
+    id: 'repair',
+    label: 'Repair',
     icon: 'heal',
-    desc: 'Brush over blemishes, spots or distractions to heal them using nearby texture.',
+    desc: 'Brush over spots, blemishes or small distractions — they’re replaced with clean nearby texture, colour-matched so they blend in.',
+  },
+  {
+    id: 'remove',
+    label: 'Remove',
+    icon: 'wand',
+    desc: 'Tap an object to erase it — the surrounding background is filled in over it. Works best on fairly even backgrounds (sky, walls, water). Tap again to extend.',
+  },
+  {
+    id: 'clone',
+    label: 'Clone',
+    icon: 'copy',
+    desc: 'Copy one part of the photo onto another. Tap once to set the source, then brush where you want it painted.',
   },
   {
     id: 'smooth',
     label: 'Smooth',
     icon: 'smooth',
-    desc: 'Brush over skin, noise or texture to gently blur and soften it — no color is painted.',
+    desc: 'Soften skin, noise or texture. Brush gently — no colour is painted, it just blurs what’s underneath.',
   },
   {
-    id: 'erase',
-    label: 'Magic Remove',
-    icon: 'eraser',
-    desc: 'Tap an object or distraction to remove it — it’s filled in by blending the surrounding background over it. Works best against fairly even backgrounds (sky, walls, roads).',
+    id: 'dodge',
+    label: 'Brighten',
+    icon: 'sun',
+    desc: 'Lighten as you brush — great for eyes, teeth, highlights or lifting shadows on a face.',
+  },
+  {
+    id: 'burn',
+    label: 'Darken',
+    icon: 'moon',
+    desc: 'Darken as you brush — deepen shadows, add contour or rein in blown-out areas.',
+  },
+  {
+    id: 'sharpen',
+    label: 'Sharpen',
+    icon: 'sparkle',
+    desc: 'Add local crispness — bring out detail in eyes, hair or text without sharpening the whole photo.',
   },
 ]
 
@@ -31,30 +62,44 @@ export function RetouchPanel() {
   const hasRetouch = useEditor(
     (s) => s.retouchPast.length > 0 || s.retouchVersion > 0,
   )
-  const mode = MODES.find((m) => m.id === tool.mode)!
+  const active = TOOLS.find((t) => t.id === tool.mode)!
+  const isBrush = tool.mode !== 'remove'
 
   return (
     <div className="panel">
       <h3 className="panel-title">Retouch</h3>
 
-      <div className="mode-grid">
-        {MODES.map((m) => (
+      <div className="retouch-grid">
+        {TOOLS.map((t) => (
           <button
-            key={m.id}
-            className={tool.mode === m.id ? 'mode-cell active' : 'mode-cell'}
-            onClick={() => setTool({ mode: m.id })}
+            key={t.id}
+            className={tool.mode === t.id ? 'mode-cell active' : 'mode-cell'}
+            onClick={() => setTool({ mode: t.id })}
+            title={t.label}
           >
             <span className="mode-icon">
-              <Icon name={m.icon} size={22} />
+              <Icon name={t.icon} size={20} />
             </span>
-            <span>{m.label}</span>
+            <span>{t.label}</span>
           </button>
         ))}
       </div>
 
-      <p className="hint">{mode.desc}</p>
+      <p className="hint">{active.desc}</p>
 
-      {tool.mode !== 'erase' ? (
+      {tool.mode === 'clone' && (
+        <div className="clone-status">
+          <span className={tool.cloneSource ? 'dot on' : 'dot'} />
+          {tool.cloneSource ? 'Source set — brush to clone' : 'Tap the photo to set a source'}
+          {tool.cloneSource && (
+            <button className="btn tiny" onClick={() => setTool({ cloneSource: null })}>
+              Reset source
+            </button>
+          )}
+        </div>
+      )}
+
+      {isBrush ? (
         <>
           <label className="mini-label">Brush size: {tool.size}</label>
           <input
@@ -64,22 +109,15 @@ export function RetouchPanel() {
             value={tool.size}
             onChange={(e) => setTool({ size: Number(e.target.value) })}
           />
-
-          {tool.mode === 'smooth' && (
-            <>
-              <label className="mini-label">
-                Strength: {Math.round(tool.hardness * 100)}%
-              </label>
-              <input
-                type="range"
-                min={0.05}
-                max={1}
-                step={0.01}
-                value={tool.hardness}
-                onChange={(e) => setTool({ hardness: Number(e.target.value) })}
-              />
-            </>
-          )}
+          <label className="mini-label">Strength: {Math.round(tool.strength * 100)}%</label>
+          <input
+            type="range"
+            min={0.05}
+            max={1}
+            step={0.01}
+            value={tool.strength}
+            onChange={(e) => setTool({ strength: Number(e.target.value) })}
+          />
         </>
       ) : (
         <>
@@ -92,8 +130,7 @@ export function RetouchPanel() {
             onChange={(e) => setTool({ tolerance: Number(e.target.value) })}
           />
           <p className="hint">
-            Higher tolerance removes a wider range of colors per tap. Tap again
-            to extend the removed area.
+            Higher tolerance removes a wider range of colours per tap.
           </p>
         </>
       )}

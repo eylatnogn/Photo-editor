@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEditor } from '../state/editorStore'
 import { renderDocument } from '../engine/render'
-import { magicHeal, stampHeal, stampSmooth } from '../engine/retouch'
+import {
+  brushRepair,
+  brushClone,
+  brushSmooth,
+  brushDodgeBurn,
+  brushSharpen,
+  magicRemove,
+} from '../engine/retouch'
 import { hitLayer } from '../engine/layerGeometry'
 import { onImageLoad } from '../engine/imageCache'
 import { LayerTransform } from './LayerTransform'
@@ -49,6 +56,7 @@ export function EditorCanvas() {
   const retouch = useEditor((s) => s.retouch)
   const retouchVersion = useEditor((s) => s.retouchVersion)
   const retouchTool = useEditor((s) => s.retouchTool)
+  const setRetouchTool = useEditor((s) => s.setRetouchTool)
   const beginRetouch = useEditor((s) => s.beginRetouch)
   const bumpRetouch = useEditor((s) => s.bumpRetouch)
   const commitRetouch = useEditor((s) => s.commitRetouch)
@@ -61,6 +69,7 @@ export function EditorCanvas() {
   const sampleRef = useRef<HTMLCanvasElement | null>(null)
   const retouching = useRef(false)
   const lastPt = useRef<{ x: number; y: number } | null>(null)
+  const cloneStart = useRef<{ x: number; y: number } | null>(null)
 
   // Interaction refs (persist across re-renders during a drag).
   const cropDrag = useRef<{
@@ -276,24 +285,43 @@ export function EditorCanvas() {
   // between the previous and current point for smooth coverage.
   const strokeRetouch = (n: { x: number; y: number }) => {
     const heal = retouch.heal
-    const sample = sampleRef.current
-    if (!heal || !sample) return
-    const ctx = heal.getContext('2d')!
+    const base = sampleRef.current
+    if (!heal || !base) return
     const w = heal.width
     const h = heal.height
     const radius = Math.max(3, (retouchTool.size / 1000) * Math.max(w, h))
+    const { mode, strength, cloneSource } = retouchTool
     const x = n.x * w
     const y = n.y * h
     const from = lastPt.current ?? { x, y }
+    // Clone keeps a fixed source→paint offset locked at the stroke's start.
+    const cloneOff = cloneSource && cloneStart.current
+      ? { dx: cloneStart.current.x - cloneSource.x * w, dy: cloneStart.current.y - cloneSource.y * h }
+      : null
     const dist = Math.hypot(x - from.x, y - from.y)
-    const steps = Math.max(1, Math.floor(dist / (radius * 0.4)))
+    const steps = Math.max(1, Math.floor(dist / (radius * 0.35)))
     for (let i = 1; i <= steps; i++) {
       const px = from.x + (x - from.x) * (i / steps)
       const py = from.y + (y - from.y) * (i / steps)
-      if (retouchTool.mode === 'cleanup') {
-        stampHeal(ctx, sample, px, py, radius)
-      } else {
-        stampSmooth(ctx, sample, px, py, radius, retouchTool.hardness)
+      switch (mode) {
+        case 'repair':
+          brushRepair(base, heal, px, py, radius, strength)
+          break
+        case 'smooth':
+          brushSmooth(base, heal, px, py, radius, strength)
+          break
+        case 'dodge':
+          brushDodgeBurn(base, heal, px, py, radius, strength, 1)
+          break
+        case 'burn':
+          brushDodgeBurn(base, heal, px, py, radius, strength, -1)
+          break
+        case 'sharpen':
+          brushSharpen(base, heal, px, py, radius, strength)
+          break
+        case 'clone':
+          if (cloneOff) brushClone(base, heal, px, py, radius, strength, px - cloneOff.dx, py - cloneOff.dy)
+          break
       }
     }
     lastPt.current = { x, y }
@@ -322,11 +350,16 @@ export function EditorCanvas() {
     if (activeTool === 'retouch') {
       const heal = retouch.heal
       if (!heal) return
+      // Clone tool: the first tap (no source yet) just sets the source point.
+      if (retouchTool.mode === 'clone' && !retouchTool.cloneSource) {
+        setRetouchTool({ cloneSource: { x: n.x, y: n.y } })
+        return
+      }
       beginRetouch()
-      if (retouchTool.mode === 'erase') {
+      if (retouchTool.mode === 'remove') {
         const sample = sampleRef.current
         if (sample) {
-          magicHeal(
+          magicRemove(
             heal.getContext('2d')!,
             sample,
             n.x * heal.width,
@@ -339,6 +372,7 @@ export function EditorCanvas() {
       } else {
         retouching.current = true
         lastPt.current = null
+        cloneStart.current = { x: n.x * heal.width, y: n.y * heal.height }
         strokeRetouch(n)
       }
       return

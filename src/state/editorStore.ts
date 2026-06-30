@@ -23,13 +23,20 @@ export interface BrushSettings {
   opacity: number
 }
 
-export type RetouchMode = 'cleanup' | 'smooth' | 'erase'
+export type RetouchMode =
+  | 'repair'
+  | 'clone'
+  | 'smooth'
+  | 'dodge'
+  | 'burn'
+  | 'sharpen'
+  | 'remove'
 export interface RetouchSettings {
   mode: RetouchMode
-  size: number
-  hardness: number // 0..1 brush edge softness (airbrush)
-  color: string
-  tolerance: number // 0..255 magic eraser color tolerance
+  size: number // brush diameter control (4..120)
+  strength: number // 0..1 effect intensity
+  tolerance: number // 0..255 colour spread for the remove tool
+  cloneSource: { x: number; y: number } | null // normalized clone anchor
 }
 
 // Destructive pixel layers composited into the source at render time.
@@ -201,11 +208,11 @@ export const useEditor = create<EditorState>((set, get) => ({
   retouchFuture: [],
   retouchPending: null,
   retouchTool: {
-    mode: 'cleanup',
+    mode: 'repair',
     size: 28,
-    hardness: 0.5,
-    color: '#ff3b30',
+    strength: 0.6,
     tolerance: 36,
+    cloneSource: null,
   },
 
   actionLog: [],

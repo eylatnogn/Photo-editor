@@ -988,11 +988,37 @@ input[type='color'] {
 }
 
 /* ---------- Retouch modes ---------- */
-.mode-grid {
+.mode-grid,
+.retouch-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin-bottom: 6px;
+}
+.clone-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 8px 0;
+}
+.clone-status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex: none;
+}
+.clone-status .dot.on {
+  background: #34c759;
+}
+.clone-status .btn.tiny {
+  margin-left: auto;
 }
 .mode-cell {
   display: flex;

@@ -1,24 +1,140 @@
-// Destructive retouch operations that paint onto the heal/erase overlay
-// canvases. All coordinates are in the retouch-layer pixel space (which the
-// caller maps to from normalized pointer positions).
+// Retouch engine. Every tool paints onto a single destructive `heal` overlay
+// (RGBA, transparent where untouched) that the renderer composites over the
+// source. Brushes read the LIVE composite (source + heal-so-far) so edits
+// stack naturally, and the overlay stays at a capped resolution while the
+// untouched source keeps full resolution on export.
+//
+// All coordinates are in heal/sample pixel space (the caller maps normalized
+// pointer positions into it).
 
-/**
- * Patch-heal: copy a soft-edged disk of texture sampled from a nearby clean
- * area over the target spot. A simple, forgiving alternative to a full
- * content-aware heal.
- */
-export function stampHeal(
-  healCtx: CanvasRenderingContext2D,
-  sample: HTMLCanvasElement,
+const clampI = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v)
+
+interface Patch {
+  c: HTMLCanvasElement
+  ctx: CanvasRenderingContext2D
+  sx: number
+  sy: number
+  size: number
+}
+
+// A brush-sized square of the current composite (base + heal painted so far),
+// plus where it sits in image pixels.
+function compositePatch(
+  base: HTMLCanvasElement,
+  heal: HTMLCanvasElement,
   x: number,
   y: number,
-  radius: number,
-) {
-  const w = sample.width
-  const h = sample.height
-  const r = Math.max(2, radius)
+  r: number,
+): Patch {
+  const size = Math.max(3, Math.ceil(2 * r))
+  const sx = clampI(Math.round(x - r), 0, Math.max(0, base.width - size))
+  const sy = clampI(Math.round(y - r), 0, Math.max(0, base.height - size))
+  const c = document.createElement('canvas')
+  c.width = size
+  c.height = size
+  const ctx = c.getContext('2d')!
+  ctx.drawImage(base, sx, sy, size, size, 0, 0, size, size)
+  ctx.drawImage(heal, sx, sy, size, size, 0, 0, size, size)
+  return { c, ctx, sx, sy, size }
+}
 
-  // Pick a sample offset to the side; flip if it would leave the image.
+// Just the base (untouched) pixels for a region — used as a clean donor.
+function basePatch(base: HTMLCanvasElement, x: number, y: number, r: number): Patch {
+  const size = Math.max(3, Math.ceil(2 * r))
+  const sx = clampI(Math.round(x - r), 0, Math.max(0, base.width - size))
+  const sy = clampI(Math.round(y - r), 0, Math.max(0, base.height - size))
+  const c = document.createElement('canvas')
+  c.width = size
+  c.height = size
+  const ctx = c.getContext('2d')!
+  ctx.drawImage(base, sx, sy, size, size, 0, 0, size, size)
+  return { c, ctx, sx, sy, size }
+}
+
+// Feather a processed patch into a soft disk and stamp it onto the heal layer
+// at (dx,dy). `core` (0..1) is the peak opacity, so partial-strength tools
+// (e.g. a light dodge) blend gently.
+function stampFeathered(
+  healCtx: CanvasRenderingContext2D,
+  patch: HTMLCanvasElement,
+  dx: number,
+  dy: number,
+  gx: number,
+  gy: number,
+  r: number,
+  core: number,
+) {
+  const pctx = patch.getContext('2d')!
+  pctx.globalCompositeOperation = 'destination-in'
+  const g = pctx.createRadialGradient(gx, gy, 0, gx, gy, r)
+  g.addColorStop(0, `rgba(0,0,0,${core})`)
+  g.addColorStop(0.72, `rgba(0,0,0,${core})`)
+  g.addColorStop(1, 'rgba(0,0,0,0)')
+  pctx.fillStyle = g
+  pctx.fillRect(0, 0, patch.width, patch.height)
+  healCtx.drawImage(patch, dx, dy)
+}
+
+function meanRGB(ctx: CanvasRenderingContext2D, size: number): [number, number, number] {
+  const d = ctx.getImageData(0, 0, size, size).data
+  let r = 0
+  let g = 0
+  let b = 0
+  let n = 0
+  for (let i = 0; i < d.length; i += 4) {
+    r += d[i]
+    g += d[i + 1]
+    b += d[i + 2]
+    n++
+  }
+  return [r / n, g / n, b / n]
+}
+
+function blurredCopy(src: HTMLCanvasElement, px: number): HTMLCanvasElement {
+  const b = document.createElement('canvas')
+  b.width = src.width
+  b.height = src.height
+  const ctx = b.getContext('2d')!
+  ctx.filter = `blur(${px}px)`
+  ctx.drawImage(src, 0, 0)
+  return b
+}
+
+// ---------- Brushes ----------
+
+// Smooth / skin-soften: blur the live composite and feather it back.
+export function brushSmooth(
+  base: HTMLCanvasElement,
+  heal: HTMLCanvasElement,
+  x: number,
+  y: number,
+  r: number,
+  strength: number,
+) {
+  const p = compositePatch(base, heal, x, y, r)
+  const blurPx = Math.max(1.2, r * (0.16 + strength * 0.6))
+  const b = blurredCopy(p.c, blurPx)
+  p.ctx.clearRect(0, 0, p.size, p.size)
+  p.ctx.drawImage(b, 0, 0)
+  stampFeathered(heal.getContext('2d')!, p.c, p.sx, p.sy, x - p.sx, y - p.sy, r, 1)
+}
+
+// Repair / spot-heal: take clean texture from a nearby donor and shift its
+// colour to match the target's lighting, so blemishes vanish seamlessly.
+export function brushRepair(
+  base: HTMLCanvasElement,
+  heal: HTMLCanvasElement,
+  x: number,
+  y: number,
+  r: number,
+  strength: number,
+) {
+  const w = base.width
+  const h = base.height
+  // target's current mean colour
+  const tgt = compositePatch(base, heal, x, y, r)
+  const [tr, tg, tb] = meanRGB(tgt.ctx, tgt.size)
+  // pick a donor offset to the side, flipping if it would leave the image
   let ox = r * 2.6
   let oy = 0
   if (x + ox + r > w) ox = -ox
@@ -26,139 +142,96 @@ export function stampHeal(
     ox = 0
     oy = y + r * 2.6 + r > h ? -r * 2.6 : r * 2.6
   }
-  const sx = Math.max(0, Math.min(w - 2 * r, x + ox - r))
-  const sy = Math.max(0, Math.min(h - 2 * r, y + oy - r))
-
-  const patch = document.createElement('canvas')
-  patch.width = Math.ceil(2 * r)
-  patch.height = Math.ceil(2 * r)
-  const pctx = patch.getContext('2d')!
-  pctx.drawImage(sample, sx, sy, 2 * r, 2 * r, 0, 0, 2 * r, 2 * r)
-
-  // Soft circular alpha mask.
-  pctx.globalCompositeOperation = 'destination-in'
-  const grad = pctx.createRadialGradient(r, r, 0, r, r, r)
-  grad.addColorStop(0, 'rgba(0,0,0,1)')
-  grad.addColorStop(0.7, 'rgba(0,0,0,0.9)')
-  grad.addColorStop(1, 'rgba(0,0,0,0)')
-  pctx.fillStyle = grad
-  pctx.fillRect(0, 0, 2 * r, 2 * r)
-
-  healCtx.drawImage(patch, x - r, y - r)
+  const donor = basePatch(base, x + ox, y + oy, r)
+  const [dr, dg, db] = meanRGB(donor.ctx, donor.size)
+  // colour-correct the donor toward the target's lighting
+  const img = donor.ctx.getImageData(0, 0, donor.size, donor.size)
+  const d = img.data
+  const sr = tr - dr
+  const sg = tg - dg
+  const sb = tb - db
+  for (let i = 0; i < d.length; i += 4) {
+    d[i] = clampI(d[i] + sr, 0, 255)
+    d[i + 1] = clampI(d[i + 1] + sg, 0, 255)
+    d[i + 2] = clampI(d[i + 2] + sb, 0, 255)
+  }
+  donor.ctx.putImageData(img, 0, 0)
+  // stamp at the TARGET location (donor patch is the same size)
+  const dsx = clampI(Math.round(x - r), 0, Math.max(0, w - donor.size))
+  const dsy = clampI(Math.round(y - r), 0, Math.max(0, h - donor.size))
+  stampFeathered(heal.getContext('2d')!, donor.c, dsx, dsy, x - dsx, y - dsy, r, 0.6 + strength * 0.4)
 }
 
-/**
- * Smooth: sample the underlying image where the user brushes, blur it, and
- * feather it back over the area — softening skin, noise or texture without
- * painting any color. `strength` (0..1) controls how much it blurs.
- */
-export function stampSmooth(
-  healCtx: CanvasRenderingContext2D,
-  sample: HTMLCanvasElement,
+// Clone stamp: copy the live composite from a locked source point.
+export function brushClone(
+  base: HTMLCanvasElement,
+  heal: HTMLCanvasElement,
   x: number,
   y: number,
-  radius: number,
+  r: number,
+  strength: number,
+  srcX: number,
+  srcY: number,
+) {
+  const donor = compositePatch(base, heal, srcX, srcY, r)
+  const dsx = clampI(Math.round(x - r), 0, Math.max(0, base.width - donor.size))
+  const dsy = clampI(Math.round(y - r), 0, Math.max(0, base.height - donor.size))
+  stampFeathered(heal.getContext('2d')!, donor.c, dsx, dsy, x - dsx, y - dsy, r, 0.6 + strength * 0.4)
+}
+
+// Dodge (lighten) / Burn (darken): nudge the live composite's luminance.
+export function brushDodgeBurn(
+  base: HTMLCanvasElement,
+  heal: HTMLCanvasElement,
+  x: number,
+  y: number,
+  r: number,
+  strength: number,
+  sign: 1 | -1,
+) {
+  const p = compositePatch(base, heal, x, y, r)
+  const img = p.ctx.getImageData(0, 0, p.size, p.size)
+  const d = img.data
+  const k = strength * 0.22
+  for (let i = 0; i < d.length; i += 4) {
+    for (let ch = 0; ch < 3; ch++) {
+      const v = d[i + ch]
+      d[i + ch] = sign > 0 ? v + (255 - v) * k : v * (1 - k)
+    }
+  }
+  p.ctx.putImageData(img, 0, 0)
+  stampFeathered(heal.getContext('2d')!, p.c, p.sx, p.sy, x - p.sx, y - p.sy, r, 1)
+}
+
+// Sharpen: unsharp-mask the live composite locally.
+export function brushSharpen(
+  base: HTMLCanvasElement,
+  heal: HTMLCanvasElement,
+  x: number,
+  y: number,
+  r: number,
   strength: number,
 ) {
-  const w = sample.width
-  const h = sample.height
-  const r = Math.max(3, radius)
-  const size = Math.ceil(2 * r)
-
-  // The patch must be sampled from and stamped back at the SAME image
-  // coordinates, or the blurred pixels land offset from where they came from
-  // and the image appears smeared (this matters near the borders, where the
-  // sampled region has to be clamped to stay in bounds).
-  const sx = Math.max(0, Math.min(w - size, Math.round(x - r)))
-  const sy = Math.max(0, Math.min(h - size, Math.round(y - r)))
-
-  const blurPx = Math.max(1.5, r * (0.18 + strength * 0.6))
-
-  const patch = document.createElement('canvas')
-  patch.width = size
-  patch.height = size
-  const pctx = patch.getContext('2d')!
-
-  // Blur the sampled region. Draw it slightly oversized first so the blur near
-  // the patch edge pulls from real neighbouring pixels instead of transparency.
-  pctx.filter = `blur(${blurPx}px)`
-  pctx.drawImage(sample, sx, sy, size, size, 0, 0, size, size)
-  pctx.filter = 'none'
-
-  // Soft circular mask centred on the cursor (not the patch centre, which can
-  // differ from the cursor near the borders). A wide, fully-opaque core makes
-  // the brushed area read as cleanly blurred — overlapping stamps just replace
-  // each other instead of layering translucent ghosts.
-  const gx = x - sx
-  const gy = y - sy
-  pctx.globalCompositeOperation = 'destination-in'
-  const grad = pctx.createRadialGradient(gx, gy, 0, gx, gy, r)
-  grad.addColorStop(0, 'rgba(0,0,0,1)')
-  grad.addColorStop(0.72, 'rgba(0,0,0,1)')
-  grad.addColorStop(1, 'rgba(0,0,0,0)')
-  pctx.fillStyle = grad
-  pctx.fillRect(0, 0, size, size)
-
-  healCtx.drawImage(patch, sx, sy)
-}
-
-/**
- * Magic eraser: flood-fill a contiguous region of similar color starting at
- * (x, y) and mark it on the erase layer (white = removed). Returns the number
- * of pixels erased.
- */
-export function magicErase(
-  eraseCtx: CanvasRenderingContext2D,
-  sampleData: ImageData,
-  x: number,
-  y: number,
-  tolerance: number,
-): number {
-  const w = sampleData.width
-  const h = sampleData.height
-  const data = sampleData.data
-  const sx = Math.round(x)
-  const sy = Math.round(y)
-  if (sx < 0 || sy < 0 || sx >= w || sy >= h) return 0
-
-  const idx0 = (sy * w + sx) * 4
-  const tr = data[idx0]
-  const tg = data[idx0 + 1]
-  const tb = data[idx0 + 2]
-  const tol2 = tolerance * tolerance * 3
-
-  const visited = new Uint8Array(w * h)
-  const out = eraseCtx.getImageData(0, 0, w, h)
-  const od = out.data
-  const stack = [sx, sy]
-  let count = 0
-
-  while (stack.length) {
-    const py = stack.pop()!
-    const px = stack.pop()!
-    if (px < 0 || py < 0 || px >= w || py >= h) continue
-    const p = py * w + px
-    if (visited[p]) continue
-    visited[p] = 1
-    const i = p * 4
-    const dr = data[i] - tr
-    const dg = data[i + 1] - tg
-    const db = data[i + 2] - tb
-    if (dr * dr + dg * dg + db * db > tol2) continue
-    // mark erased
-    od[i] = 255
-    od[i + 1] = 255
-    od[i + 2] = 255
-    od[i + 3] = 255
-    count++
-    stack.push(px + 1, py, px - 1, py, px, py + 1, px, py - 1)
+  const p = compositePatch(base, heal, x, y, r)
+  const blur = blurredCopy(p.c, Math.max(1, r * 0.25))
+  const oimg = p.ctx.getImageData(0, 0, p.size, p.size)
+  const bimg = blur.getContext('2d')!.getImageData(0, 0, p.size, p.size)
+  const o = oimg.data
+  const bd = bimg.data
+  const amt = 0.6 + strength * 1.6
+  for (let i = 0; i < o.length; i += 4) {
+    for (let ch = 0; ch < 3; ch++) {
+      const v = o[i + ch]
+      o[i + ch] = clampI(v + (v - bd[i + ch]) * amt, 0, 255)
+    }
   }
-
-  eraseCtx.putImageData(out, 0, 0)
-  return count
+  p.ctx.putImageData(oimg, 0, 0)
+  stampFeathered(heal.getContext('2d')!, p.c, p.sx, p.sy, x - p.sx, y - p.sy, r, 1)
 }
 
-// Solve Laplace's equation over the masked pixels (Gauss-Seidel), so the
+// ---------- Object removal (content-aware) ----------
+
+// Solve Laplace's equation over the masked pixels (Gauss-Seidel) so the
 // surrounding background diffuses smoothly into the hole.
 function laplaceFill(
   R: Float32Array,
@@ -228,12 +301,10 @@ function dilate(mask: Uint8Array, w: number, h: number) {
   }
 }
 
-/**
- * Content-aware remove: flood-fill a region of similar colour at (x, y), then
- * inpaint it by diffusing the surrounding background over it (painted onto the
- * heal layer) — hiding the object instead of cutting it out. Returns pixels.
- */
-export function magicHeal(
+// Content-aware remove: flood-fill a region of similar colour at (x, y), then
+// inpaint it by diffusing the surrounding background over it (painted onto the
+// heal layer) — hiding the object instead of cutting it out. Returns pixels.
+export function magicRemove(
   healCtx: CanvasRenderingContext2D,
   sample: HTMLCanvasElement,
   x: number,
@@ -283,7 +354,6 @@ export function magicHeal(
   }
   if (!count) return 0
 
-  // Region with surrounding context to sample background from.
   const bw = maxx - minx + 1
   const bh = maxy - miny + 1
   const pad = Math.round(Math.max(bw, bh) * 0.6) + 10
@@ -294,8 +364,7 @@ export function magicHeal(
   const rw = x1 - x0 + 1
   const rh = y1 - y0 + 1
 
-  // Downscale the region — the background fill is low-frequency, so solving it
-  // small (then scaling up) is both faster and smoother.
+  // Solve the fill at low resolution (it's low-frequency) then scale up.
   const FILL = 110
   const f = Math.min(1, FILL / Math.max(rw, rh))
   const sw = Math.max(2, Math.round(rw * f))
@@ -316,12 +385,9 @@ export function magicHeal(
       M[k] = mask[fy * w + fx]
     }
   }
-  // Dilate generously so the fill covers the object's anti-aliased edge plus a
-  // margin (the feather then happens out in the background, not on the object).
   for (let i = 0; i < 4; i++) dilate(M, sw, sh)
   laplaceFill(R, G, B, M, sw, sh)
 
-  // Small filled image -> scaled-up patch.
   const small = document.createElement('canvas')
   small.width = sw
   small.height = sh
@@ -342,9 +408,7 @@ export function magicHeal(
   pctx.imageSmoothingEnabled = true
   pctx.drawImage(small, 0, 0, rw, rh)
 
-  // Alpha mask from the dilated small mask: covers the object + margin, with a
-  // soft edge (blur at small scale + bilinear upscale) so the fill blends into
-  // the background without leaving a halo of the original object.
+  // Soft mask covering the object + margin so the fill blends without a halo.
   const ms = document.createElement('canvas')
   ms.width = sw
   ms.height = sh

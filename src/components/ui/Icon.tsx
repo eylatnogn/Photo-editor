@@ -45,6 +45,8 @@ export type IconName =
   | 'folder'
   | 'zoomIn'
   | 'zoomOut'
+  | 'sun'
+  | 'moon'
 
 interface IconProps {
   name: IconName
@@ -311,6 +313,13 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M21 21l-4.3-4.3M8 11h6" />
     </>
   ),
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" />
+    </>
+  ),
+  moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />,
 }
 
 export function Icon({ name, size = 20, className, strokeWidth = 1.7 }: IconProps) {
