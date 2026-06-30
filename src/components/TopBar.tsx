@@ -42,7 +42,7 @@ export function TopBar() {
         <span className="logo">
           <Icon name="logo" size={22} />
         </span>
-        <span className="brand-name">Aperture</span>
+        <span className="brand-name">Vividly</span>
       </div>
 
       {hasImage && (

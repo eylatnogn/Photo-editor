@@ -50,7 +50,7 @@ export function Dropzone() {
         <div className="dropzone-icon">
           <Icon name="logo" size={64} strokeWidth={1.4} />
         </div>
-        <h1>Aperture Photo Editor</h1>
+        <h1>Vividly</h1>
         <p className="sub">
           Crop, retouch, filter, add text and remove backgrounds with AI — all
           in your browser. Nothing is uploaded; your photos never leave your

@@ -1,4 +1,4 @@
-# Aperture — Photo Editor
+# Vividly — Photo Editor
 
 A full-featured, browser-based photo editor built with **React + TypeScript + Vite**.
 All editing happens client-side on a Canvas/WebAssembly pipeline — your photos
