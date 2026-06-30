@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEditor } from '../../state/editorStore'
-import { STICKERS, drawSticker, type StickerCategory, type StickerDef } from '../../engine/stickers'
+import { STICKERS, drawSticker, LETTER_SHADES, type StickerCategory, type StickerDef } from '../../engine/stickers'
 import { drawFramedImage } from '../../engine/render'
 import { buildFilmStrip } from '../../engine/filmstrip'
 import { primeImage } from '../../engine/imageCache'
@@ -115,6 +115,7 @@ export function StickerPanel() {
   const layers = useEditor((s) => s.doc.layers)
   const selectedId = useEditor((s) => s.selectedLayerId)
   const [cat, setCat] = useState<StickerCategory>('cute')
+  const [letterCase, setLetterCase] = useState<'upper' | 'lower'>('upper')
 
   const frameInput = useRef<HTMLInputElement>(null)
   const stripInput = useRef<HTMLInputElement>(null)
@@ -336,12 +337,32 @@ export function StickerPanel() {
           </button>
         ))}
       </div>
+      {cat === 'letters' && (
+        <div className="row gap" style={{ marginTop: 8 }}>
+          {(['upper', 'lower'] as const).map((c) => (
+            <button
+              key={c}
+              className={letterCase === c ? 'btn chip active' : 'btn chip'}
+              onClick={() => setLetterCase(c)}
+            >
+              {c === 'upper' ? 'ABC' : 'abc'}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="sticker-grid">
-        {STICKERS.filter((s) => s.category === cat).map((def) => (
-          <button key={def.id} className="sticker-cell" onClick={() => addSticker(def)}>
-            <StickerThumb def={def} />
-          </button>
-        ))}
+        {STICKERS.filter((s) => s.category === cat)
+          .filter((s) => {
+            if (cat !== 'letters') return true
+            const ch = s.defaultText ?? ''
+            if (!/[a-z]/i.test(ch)) return true // digits in both cases
+            return letterCase === 'upper' ? ch === ch.toUpperCase() : ch === ch.toLowerCase()
+          })
+          .map((def) => (
+            <button key={def.id} className="sticker-cell" onClick={() => addSticker(def)}>
+              <StickerThumb def={def} />
+            </button>
+          ))}
       </div>
 
       {selSticker && (
@@ -353,6 +374,33 @@ export function StickerPanel() {
               value={selSticker.text ?? ''}
               onChange={(e) => updateLayer(selSticker.id, { text: e.target.value })}
             />
+          )}
+          {selDef?.category === 'letters' && (
+            <>
+              <label className="mini-label">Paper shade</label>
+              <div className="swatches">
+                <button
+                  className={!selSticker.color || selSticker.color === 'auto' ? 'swatch auto active' : 'swatch auto'}
+                  title="Auto (mixed papers)"
+                  onClick={() => updateLayer(selSticker.id, { color: 'auto' })}
+                >
+                  Aa
+                </button>
+                {LETTER_SHADES.map((c) => (
+                  <button
+                    key={c}
+                    className={selSticker.color === c ? 'swatch active' : 'swatch'}
+                    style={{ background: c }}
+                    onClick={() => updateLayer(selSticker.id, { color: c })}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={selSticker.color && selSticker.color !== 'auto' ? selSticker.color : '#ffffff'}
+                  onChange={(e) => updateLayer(selSticker.id, { color: e.target.value })}
+                />
+              </div>
+            </>
           )}
           {selDef?.hasColor && (
             <div className="swatches">

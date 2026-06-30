@@ -770,16 +770,37 @@ function drawMushroom(ctx: CanvasRenderingContext2D, w: number, color: string) {
 }
 
 // ---------- Ransom-note magazine cut-out letters ----------
-const RANSOM_PAPERS = [
-  { bg: '#f1ece0', ink: '#1a1a1a', font: 'Georgia, serif' },
-  { bg: '#ffffff', ink: '#222222', font: '"Times New Roman", serif' },
-  { bg: '#1c1c1c', ink: '#f4f4f4', font: 'Arial, sans-serif' },
-  { bg: '#c8412f', ink: '#ffffff', font: 'Impact, sans-serif' },
-  { bg: '#3f6fb0', ink: '#ffffff', font: 'Arial, sans-serif' },
-  { bg: '#e8b93c', ink: '#222222', font: 'Georgia, serif' },
-  { bg: '#caa46a', ink: '#2a1f12', font: '"Courier New", monospace' },
-  { bg: '#d98cae', ink: '#ffffff', font: 'Georgia, serif' },
+const RANSOM_FONTS = [
+  'Georgia, serif',
+  '"Times New Roman", serif',
+  'Arial, sans-serif',
+  'Impact, sans-serif',
+  '"Courier New", monospace',
+  '"Playfair Display", serif',
 ]
+// A broad set of paper colours/shades the cut-outs are clipped from.
+const RANSOM_PAPERS = [
+  '#f1ece0', '#ffffff', '#1c1c1c', '#2b2b2b', '#c8412f', '#a8281c',
+  '#3f6fb0', '#21506e', '#e8b93c', '#f0d878', '#caa46a', '#8a6b40',
+  '#d98cae', '#e7a9c6', '#6aa84f', '#3d7a3d', '#7c5cff', '#5b8db8',
+  '#ff8a5c', '#5ec5c0',
+]
+
+// Curated paper shades offered in the UI when recolouring a cut-out letter.
+export const LETTER_SHADES = [
+  '#f1ece0', '#ffffff', '#1c1c1c', '#c8412f', '#3f6fb0',
+  '#e8b93c', '#caa46a', '#d98cae', '#6aa84f', '#7c5cff',
+]
+
+// Pick readable ink (near-black or near-white) for a paper colour.
+function contrastInk(hex: string): string {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  return lum > 0.6 ? '#1a1a1a' : '#f6f4ee'
+}
 
 // Deterministic torn-edge rectangle so each scrap looks hand-cut but stable.
 function jaggedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, amp: number, seed: number) {
@@ -794,10 +815,14 @@ function jaggedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numb
   ctx.closePath()
 }
 
-function drawRansomLetter(ctx: CanvasRenderingContext2D, w: number, text: string) {
+// `color` overrides the auto paper shade ('' / 'auto' keeps the per-letter mix).
+function drawRansomLetter(ctx: CanvasRenderingContext2D, w: number, text: string, color?: string) {
   const ch = (text || 'A').trim().slice(0, 1) || 'A'
   const code = ch.charCodeAt(0)
-  const v = RANSOM_PAPERS[code % RANSOM_PAPERS.length]
+  const auto = !color || color === 'auto'
+  const bg = auto ? RANSOM_PAPERS[code % RANSOM_PAPERS.length] : color
+  const ink = contrastInk(bg)
+  const font = RANSOM_FONTS[code % RANSOM_FONTS.length]
   const h = w / 0.82
   const m = w * 0.05
   // torn paper scrap with a soft drop shadow
@@ -805,15 +830,15 @@ function drawRansomLetter(ctx: CanvasRenderingContext2D, w: number, text: string
   ctx.shadowColor = 'rgba(0,0,0,0.28)'
   ctx.shadowBlur = w * 0.04
   ctx.shadowOffsetY = w * 0.014
-  ctx.fillStyle = v.bg
+  ctx.fillStyle = bg
   jaggedRect(ctx, -w / 2 + m, -h / 2 + m, w - 2 * m, h - 2 * m, w * 0.05, code)
   ctx.fill()
   ctx.restore()
   // printed glyph
-  ctx.fillStyle = v.ink
+  ctx.fillStyle = ink
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = `800 ${h * 0.6}px ${v.font}`
+  ctx.font = `800 ${h * 0.6}px ${font}`
   ctx.fillText(ch, 0, h * 0.03)
 }
 
@@ -1128,8 +1153,9 @@ export const STICKERS: StickerDef[] = [
 
 // Magazine ransom-note cut-out letters & numbers — each is a torn paper scrap
 // with a printed glyph; the paper/ink/font vary per character for an authentic
-// clipped-from-a-magazine scrapbook look.
-const RANSOM_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+// clipped-from-a-magazine scrapbook look. Uppercase, lowercase and digits.
+const RANSOM_CHARS =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
 for (const ch of RANSOM_CHARS) {
   STICKERS.push({
     id: `letter:${ch}`,
@@ -1137,7 +1163,7 @@ for (const ch of RANSOM_CHARS) {
     category: 'letters',
     hasColor: false,
     hasText: true,
-    defaultColor: '#1a1a1a',
+    defaultColor: 'auto', // per-letter paper mix; user can override the shade
     defaultText: ch,
     aspect: 0.82,
   })
@@ -1185,7 +1211,7 @@ export function drawSticker(
     return
   }
   if (id.startsWith('letter:')) {
-    drawRansomLetter(ctx, w, text ?? def.defaultText ?? id.slice(7))
+    drawRansomLetter(ctx, w, text ?? def.defaultText ?? id.slice(7), color)
     return
   }
   ctx.fillStyle = color
