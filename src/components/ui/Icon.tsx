@@ -43,6 +43,8 @@ export type IconName =
   | 'save'
   | 'trash'
   | 'folder'
+  | 'zoomIn'
+  | 'zoomOut'
 
 interface IconProps {
   name: IconName
@@ -296,6 +298,18 @@ const PATHS: Record<IconName, JSX.Element> = {
   ),
   folder: (
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+  ),
+  zoomIn: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3M11 8v6M8 11h6" />
+    </>
+  ),
+  zoomOut: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.3-4.3M8 11h6" />
+    </>
   ),
 }
 

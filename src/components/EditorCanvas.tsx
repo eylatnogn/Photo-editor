@@ -5,6 +5,7 @@ import { magicHeal, stampHeal, stampSmooth } from '../engine/retouch'
 import { hitLayer } from '../engine/layerGeometry'
 import { onImageLoad } from '../engine/imageCache'
 import { LayerTransform } from './LayerTransform'
+import { Icon } from './ui/Icon'
 
 const LAYER_TOOLS = new Set(['text', 'sticker', 'layers'])
 import {
@@ -73,6 +74,66 @@ export function EditorCanvas() {
     start: { x: number; y: number }
     orig: { x: number; y: number }
   } | null>(null)
+
+  // View transform for inspecting the preview (does NOT alter the image).
+  const [view, setView] = useState({ zoom: 1, x: 0, y: 0 })
+  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  const pinch = useRef<{ dist: number; zoom: number; cx: number; cy: number } | null>(null)
+
+  // Keep the panned image from drifting entirely out of the stage.
+  const clampView = (v: { zoom: number; x: number; y: number }) => {
+    const canvas = canvasRef.current
+    const stage = stageRef.current
+    if (!canvas || !stage || v.zoom <= 1) return { zoom: v.zoom, x: 0, y: 0 }
+    const maxX = Math.max(0, (canvas.clientWidth * v.zoom - stage.clientWidth) / 2)
+    const maxY = Math.max(0, (canvas.clientHeight * v.zoom - stage.clientHeight) / 2)
+    return { zoom: v.zoom, x: clamp(v.x, -maxX, maxX), y: clamp(v.y, -maxY, maxY) }
+  }
+
+  // Zoom toward a screen point (keeps the pixel under the cursor in place).
+  const zoomAt = (clientX: number, clientY: number, nextZoom: number) => {
+    const stage = stageRef.current
+    if (!stage) return
+    const rect = stage.getBoundingClientRect()
+    const cxr = clientX - (rect.left + rect.width / 2)
+    const cyr = clientY - (rect.top + rect.height / 2)
+    setView((v) => {
+      const z = clamp(nextZoom, 1, 8)
+      const k = z / v.zoom
+      return clampView({ zoom: z, x: cxr - (cxr - v.x) * k, y: cyr - (cyr - v.y) * k })
+    })
+  }
+
+  const zoomByButton = (factor: number) => {
+    const stage = stageRef.current
+    if (!stage) return
+    const rect = stage.getBoundingClientRect()
+    zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, view.zoom * factor)
+  }
+  const resetView = () => setView({ zoom: 1, x: 0, y: 0 })
+
+  // Reset the view whenever a different photo is loaded.
+  useEffect(() => {
+    resetView()
+  }, [source])
+
+  // ctrl/⌘ + wheel zooms toward the cursor; plain wheel / trackpad pans.
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        zoomAt(e.clientX, e.clientY, view.zoom * Math.exp(-e.deltaY * 0.0015))
+      } else if (view.zoom > 1) {
+        e.preventDefault()
+        setView((v) => clampView({ zoom: v.zoom, x: v.x - e.deltaX, y: v.y - e.deltaY }))
+      }
+    }
+    stage.addEventListener('wheel', onWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', onWheel)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view.zoom])
 
   // Re-render when a layer image finishes decoding.
   const [imgTick, setImgTick] = useState(0)
@@ -230,6 +291,20 @@ export function EditorCanvas() {
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (!previewSource) return
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    // Second finger down → start a pinch-zoom and finalize any single stroke.
+    if (pointers.current.size === 2) {
+      onPointerUp()
+      const [a, b] = [...pointers.current.values()]
+      pinch.current = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        zoom: view.zoom,
+        cx: (a.x + b.x) / 2,
+        cy: (a.y + b.y) / 2,
+      }
+      return
+    }
+    if (pointers.current.size > 2) return
     ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
     const n = getNorm(e)
 
@@ -311,6 +386,24 @@ export function EditorCanvas() {
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!previewSource) return
+    if (pointers.current.has(e.pointerId))
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    // Pinch-zoom + two-finger pan.
+    if (pinch.current && pointers.current.size >= 2) {
+      const [a, b] = [...pointers.current.values()]
+      const dist = Math.hypot(a.x - b.x, a.y - b.y)
+      const cx = (a.x + b.x) / 2
+      const cy = (a.y + b.y) / 2
+      const p = pinch.current
+      zoomAt(cx, cy, p.zoom * (dist / p.dist))
+      const dx = cx - p.cx
+      const dy = cy - p.cy
+      if (dx || dy) setView((v) => clampView({ zoom: v.zoom, x: v.x + dx, y: v.y + dy }))
+      pinch.current = { ...p, cx, cy }
+      return
+    }
+
     const n = getNorm(e)
 
     // Note: don't gate on e.buttons — touch pointer moves often report
@@ -374,7 +467,9 @@ export function EditorCanvas() {
     }
   }
 
-  const onPointerUp = () => {
+  const onPointerUp = (e?: React.PointerEvent) => {
+    if (e) pointers.current.delete(e.pointerId)
+    if (pointers.current.size < 2) pinch.current = null
     if (retouching.current) {
       retouching.current = false
       lastPt.current = null
@@ -401,7 +496,12 @@ export function EditorCanvas() {
 
   return (
     <div className="canvas-stage" ref={stageRef}>
-      <div className="canvas-wrap">
+      <div
+        className="canvas-wrap"
+        style={{
+          transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
+        }}
+      >
         <canvas
           ref={canvasRef}
           className="edit-canvas"
@@ -414,6 +514,32 @@ export function EditorCanvas() {
         {activeTool === 'crop' && <CropOverlay />}
         <LayerTransform canvasRef={canvasRef} />
         <CarouselGuide canvasRef={canvasRef} />
+      </div>
+
+      <div className="zoom-ctrl" role="group" aria-label="Preview zoom">
+        <button
+          className="zoom-btn"
+          onClick={() => zoomByButton(1 / 1.4)}
+          disabled={view.zoom <= 1.001}
+          title="Zoom out"
+        >
+          <Icon name="zoomOut" size={17} />
+        </button>
+        <button
+          className="zoom-pct"
+          onClick={resetView}
+          title="Reset zoom (fit)"
+        >
+          {Math.round(view.zoom * 100)}%
+        </button>
+        <button
+          className="zoom-btn"
+          onClick={() => zoomByButton(1.4)}
+          disabled={view.zoom >= 7.99}
+          title="Zoom in"
+        >
+          <Icon name="zoomIn" size={17} />
+        </button>
       </div>
     </div>
   )

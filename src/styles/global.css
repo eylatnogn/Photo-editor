@@ -188,6 +188,7 @@ body {
 }
 .canvas-stage {
   flex: 1;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1412,4 +1413,53 @@ input[type='color'] {
 }
 .resume-drafts {
   margin-top: 14px;
+}
+
+/* ---------- Preview zoom controls ---------- */
+.zoom-ctrl {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(20, 22, 28, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 6;
+}
+.zoom-btn,
+.zoom-pct {
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+}
+.zoom-btn {
+  width: 30px;
+  height: 30px;
+}
+.zoom-btn:hover:not(:disabled) {
+  background: var(--bg-3);
+}
+.zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.zoom-pct {
+  min-width: 50px;
+  height: 30px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+}
+.zoom-pct:hover {
+  background: var(--bg-3);
 }
