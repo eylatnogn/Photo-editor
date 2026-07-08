@@ -194,7 +194,7 @@ function drawLayers(
       ctx.translate(layer.x * width, layer.y * height)
       if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180)
       const sz = layer.scale * width
-      const anim = time > 0 ? getSticker(layer.sticker)?.anim : undefined
+      const anim = time > 0 && layer.animate !== false ? getSticker(layer.sticker)?.anim : undefined
       if (anim) ctx.globalAlpha *= applyStickerAnim(ctx, anim, animPhase(layer.id), time, sz)
       drawSticker(ctx, layer.sticker, sz, layer.color, layer.text)
       ctx.restore()
@@ -946,7 +946,11 @@ export function renderDocument(
 // True when the document has at least one sticker that idles/animates.
 export function hasAnimatedStickers(doc: EditorDocument): boolean {
   return doc.layers.some(
-    (l) => l.type === 'sticker' && !l.hidden && !!getSticker(l.sticker)?.anim,
+    (l) =>
+      l.type === 'sticker' &&
+      !l.hidden &&
+      l.animate !== false &&
+      !!getSticker(l.sticker)?.anim,
   )
 }
 

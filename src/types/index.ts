@@ -141,6 +141,7 @@ export interface StickerLayer extends LayerBase {
   scale: number // size as a fraction of the output width
   color: string
   text?: string // for label-style stickers (e.g. location pin)
+  animate?: boolean // false = hold the idle animation still (default: animate)
 }
 
 export type Layer = TextLayer | DrawLayer | ImageLayer | StickerLayer

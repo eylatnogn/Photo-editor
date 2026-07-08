@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useEditor } from '../../state/editorStore'
 import { LAYOUT_TEMPLATES, makeLayout } from '../../engine/layout'
 import { Slider } from '../ui/Slider'
+import { RemoveBgButton } from '../RemoveBgButton'
 import { primeImage } from '../../engine/imageCache'
 import { loadImageFromFile } from '../../utils'
 import type { Layout } from '../../types'
@@ -38,6 +39,7 @@ export function LayoutPanel() {
   const commit = useEditor((s) => s.commit)
   const selectedSlotId = useEditor((s) => s.selectedSlotId)
   const fillSlot = useEditor((s) => s.fillSlot)
+  const updateSlot = useEditor((s) => s.updateSlot)
   const replaceInput = useRef<HTMLInputElement>(null)
 
   const selSlot = layout?.slots.find((s) => s.id === selectedSlotId) ?? null
@@ -116,9 +118,16 @@ export function LayoutPanel() {
                   if (sl) sl.zoom = z
                 }}
               />
-              <p className="hint" style={{ marginBottom: 0 }}>
+              <p className="hint" style={{ marginBottom: 8 }}>
                 Drag inside the frame on the photo to reposition it.
               </p>
+              {selSlot.src && (
+                <RemoveBgButton
+                  src={selSlot.src}
+                  block
+                  onDone={(url, ratio) => updateSlot(selSlot.id, { src: url, naturalRatio: ratio })}
+                />
+              )}
               <input
                 ref={replaceInput}
                 type="file"

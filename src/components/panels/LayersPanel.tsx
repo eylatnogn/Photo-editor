@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useEditor } from '../../state/editorStore'
 import { useAddPhoto } from '../../hooks/useAddPhoto'
 import { Icon } from '../ui/Icon'
+import { RemoveBgButton } from '../RemoveBgButton'
 import { getSticker } from '../../engine/stickers'
 import type { Layer } from '../../types'
 
@@ -187,6 +188,15 @@ export function LayersPanel() {
             value={selected.opacity}
             onChange={(e) => updateLayer(selected.id, { opacity: Number(e.target.value) })}
           />
+          {selected.type === 'image' && (
+            <div style={{ marginTop: 10 }}>
+              <RemoveBgButton
+                src={selected.src}
+                block
+                onDone={(url, ratio) => updateLayer(selected.id, { src: url, naturalRatio: ratio })}
+              />
+            </div>
+          )}
         </>
       )}
     </div>

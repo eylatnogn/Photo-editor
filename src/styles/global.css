@@ -1601,3 +1601,14 @@ input[type='color'] {
   border: 2px solid var(--accent);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
+
+/* Sticker animation toggle */
+.btn.toggle {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+.btn.toggle.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}

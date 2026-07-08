@@ -7,6 +7,7 @@ import { primeImage } from '../../engine/imageCache'
 import { loadImageFromFile, uid } from '../../utils'
 import { Icon } from '../ui/Icon'
 import { PhotoFraming } from '../PhotoFraming'
+import { RemoveBgButton } from '../RemoveBgButton'
 import { FULL_CROP } from '../../types'
 import type { ImageFrame, ImageLayer, StickerLayer } from '../../types'
 
@@ -277,6 +278,13 @@ export function StickerPanel() {
             value={selImage.opacity}
             onChange={(e) => updateLayer(selImage.id, { opacity: Number(e.target.value) })}
           />
+          <div style={{ marginTop: 10 }}>
+            <RemoveBgButton
+              src={selImage.src}
+              block
+              onDone={(url, ratio) => updateLayer(selImage.id, { src: url, naturalRatio: ratio })}
+            />
+          </div>
         </div>
       )}
 
@@ -419,6 +427,15 @@ export function StickerPanel() {
                 onChange={(e) => updateLayer(selSticker.id, { color: e.target.value })}
               />
             </div>
+          )}
+          {selDef?.anim && (
+            <button
+              className={selSticker.animate === false ? 'btn toggle' : 'btn toggle on'}
+              onClick={() => updateLayer(selSticker.id, { animate: selSticker.animate === false })}
+            >
+              <Icon name="sparkle" size={14} />
+              {selSticker.animate === false ? 'Animation off — tap to move' : 'Animation on — tap to still'}
+            </button>
           )}
           <label className="mini-label">Opacity: {Math.round(selSticker.opacity * 100)}%</label>
           <input

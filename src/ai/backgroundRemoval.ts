@@ -51,6 +51,37 @@ export function canvasToBlob(
   })
 }
 
+function loadSrc(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('Could not decode image'))
+    img.src = src
+  })
+}
+
+/**
+ * Cut out the subject of an individual image (a photo layer or collage slot),
+ * returning a transparent PNG data URL plus its decoded image + aspect ratio.
+ * The data URL keeps the cutout self-contained so it survives save/reload.
+ */
+export async function cutoutFromSrc(
+  src: string,
+  onProgress?: (p: BgRemovalProgress) => void,
+): Promise<{ url: string; ratio: number; img: HTMLImageElement }> {
+  const img = await loadSrc(src)
+  const c = document.createElement('canvas')
+  c.width = img.naturalWidth
+  c.height = img.naturalHeight
+  c.getContext('2d')!.drawImage(img, 0, 0)
+  const cut = await removeImageBackground(c, onProgress)
+  const out = document.createElement('canvas')
+  out.width = cut.naturalWidth
+  out.height = cut.naturalHeight
+  out.getContext('2d')!.drawImage(cut, 0, 0)
+  return { url: out.toDataURL('image/png'), ratio: cut.naturalWidth / cut.naturalHeight, img: cut }
+}
+
 export function blobToImage(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob)
