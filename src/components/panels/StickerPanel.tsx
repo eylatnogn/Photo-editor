@@ -14,6 +14,7 @@ const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi 
 
 const CATEGORIES: Array<{ id: StickerCategory; label: string }> = [
   { id: 'cute', label: 'Cute' },
+  { id: 'words', label: 'Words' },
   { id: 'letters', label: 'Letters' },
   { id: 'doodle', label: 'Doodles' },
   { id: 'collage', label: 'Collage' },

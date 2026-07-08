@@ -4,12 +4,16 @@
 
 export type StickerCategory =
   | 'cute'
+  | 'words'
   | 'letters'
   | 'doodle'
   | 'collage'
   | 'shapes'
   | 'tape'
   | 'label'
+
+// Idle animations played in the live preview (exports use the neutral pose).
+export type StickerAnim = 'twinkle' | 'spin' | 'wiggle' | 'pulse' | 'bounce'
 
 export interface StickerDef {
   id: string
@@ -21,6 +25,7 @@ export interface StickerDef {
   defaultText?: string
   emoji?: string
   aspect?: number // w/h for fixed-aspect stickers (default 1)
+  anim?: StickerAnim
 }
 
 const PI2 = Math.PI * 2
@@ -842,6 +847,345 @@ function drawRansomLetter(ctx: CanvasRenderingContext2D, w: number, text: string
   ctx.fillText(ch, 0, h * 0.03)
 }
 
+// ---------- Reference-set cuties (boba, fruit, animals, flowers…) ----------
+
+function drawBoba(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  // cup
+  const cupW = w * 0.5
+  const topY = -w * 0.28
+  const botY = w * 0.42
+  ctx.beginPath()
+  ctx.moveTo(-cupW / 2, topY)
+  ctx.lineTo(cupW / 2, topY)
+  ctx.lineTo(cupW * 0.42, botY)
+  ctx.lineTo(-cupW * 0.42, botY)
+  ctx.closePath()
+  ctx.fillStyle = 'rgba(226,200,168,0.85)'
+  ctx.fill()
+  // milk tea fill
+  ctx.save()
+  ctx.clip()
+  ctx.fillStyle = color
+  ctx.fillRect(-cupW, w * 0.02, cupW * 2, w)
+  // pearls
+  ctx.fillStyle = '#3a2b26'
+  for (const [px, py] of [[-0.14, 0.32], [0, 0.36], [0.14, 0.32], [-0.07, 0.28], [0.08, 0.28]] as const)
+    { ctx.beginPath(); ctx.arc(w * px, w * py, w * 0.045, 0, PI2); ctx.fill() }
+  ctx.restore()
+  // lid + straw
+  ctx.fillStyle = '#f2ede6'
+  roundRectPath(ctx, -cupW * 0.56, topY - w * 0.06, cupW * 1.12, w * 0.1, w * 0.03)
+  ctx.fill()
+  ctx.strokeStyle = '#d98cae'
+  ctx.lineWidth = w * 0.06
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(w * 0.06, topY - w * 0.02)
+  ctx.lineTo(w * 0.16, -w * 0.44)
+  ctx.stroke()
+}
+
+function drawShell(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)'
+  ctx.lineWidth = w * 0.015
+  // fan
+  ctx.beginPath()
+  ctx.moveTo(0, w * 0.34)
+  ctx.arc(0, w * 0.34, w * 0.42, Math.PI, 0)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  // ribs
+  ctx.strokeStyle = 'rgba(0,0,0,0.14)'
+  ctx.lineWidth = w * 0.012
+  for (let i = -3; i <= 3; i++) {
+    ctx.beginPath()
+    ctx.moveTo(0, w * 0.34)
+    ctx.lineTo(Math.sin((i / 3) * 1.3) * w * 0.4, w * 0.34 - Math.cos((i / 3) * 1.3) * w * 0.4)
+    ctx.stroke()
+  }
+  // pearl
+  const g = ctx.createRadialGradient(-w * 0.04, w * 0.16, w * 0.01, 0, w * 0.2, w * 0.14)
+  g.addColorStop(0, '#ffffff')
+  g.addColorStop(1, '#e7d8e8')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.arc(0, w * 0.2, w * 0.12, 0, PI2)
+  ctx.fill()
+}
+
+function drawMusicNote(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = w * 0.05
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.12, w * 0.3)
+  ctx.lineTo(-w * 0.12, -w * 0.34)
+  ctx.lineTo(w * 0.24, -w * 0.42)
+  ctx.lineTo(w * 0.24, w * 0.14)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.ellipse(-w * 0.22, w * 0.3, w * 0.12, w * 0.09, -0.3, 0, PI2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.ellipse(w * 0.14, w * 0.14, w * 0.12, w * 0.09, -0.3, 0, PI2)
+  ctx.fill()
+}
+
+function drawCandle(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  // body
+  ctx.fillStyle = color
+  roundRectPath(ctx, -w * 0.12, -w * 0.1, w * 0.24, w * 0.5, w * 0.04)
+  ctx.fill()
+  // stripes
+  ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+  ctx.lineWidth = w * 0.03
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath()
+    ctx.moveTo(-w * 0.12, w * (0.0 + i * 0.14))
+    ctx.lineTo(w * 0.12, w * (-0.04 + i * 0.14))
+    ctx.stroke()
+  }
+  // flame
+  const g = ctx.createRadialGradient(0, -w * 0.24, w * 0.01, 0, -w * 0.2, w * 0.14)
+  g.addColorStop(0, '#fff3b0')
+  g.addColorStop(0.5, '#ffb347')
+  g.addColorStop(1, 'rgba(255,120,40,0)')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.ellipse(0, -w * 0.2, w * 0.09, w * 0.16, 0, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = '#333'
+  ctx.fillRect(-w * 0.01, -w * 0.12, w * 0.02, w * 0.05)
+}
+
+function drawPeach(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.arc(-w * 0.14, w * 0.06, w * 0.26, 0, PI2)
+  ctx.arc(w * 0.14, w * 0.06, w * 0.26, 0, PI2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.34, w * 0.02)
+  ctx.quadraticCurveTo(0, w * 0.55, w * 0.34, w * 0.02)
+  ctx.quadraticCurveTo(0, w * 0.34, -w * 0.34, w * 0.02)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'
+  ctx.beginPath()
+  ctx.arc(-w * 0.16, -w * 0.04, w * 0.06, 0, PI2)
+  ctx.fill()
+  // leaf
+  ctx.fillStyle = '#7bbf6a'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.06, -w * 0.24, w * 0.12, w * 0.06, -0.6, 0, PI2)
+  ctx.fill()
+}
+
+function drawStrawberry(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.moveTo(-w * 0.3, -w * 0.14)
+  ctx.quadraticCurveTo(-w * 0.36, w * 0.28, 0, w * 0.44)
+  ctx.quadraticCurveTo(w * 0.36, w * 0.28, w * 0.3, -w * 0.14)
+  ctx.quadraticCurveTo(0, -w * 0.02, -w * 0.3, -w * 0.14)
+  ctx.fill()
+  // seeds
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'
+  for (const [sx, sy] of [[-0.14, 0.02], [0.12, 0.0], [0, 0.14], [-0.16, 0.2], [0.16, 0.2], [-0.02, 0.28]] as const) {
+    ctx.save(); ctx.translate(w * sx, w * sy); ctx.rotate(0.5)
+    ctx.beginPath(); ctx.ellipse(0, 0, w * 0.014, w * 0.03, 0, 0, PI2); ctx.fill(); ctx.restore()
+  }
+  // cap
+  ctx.fillStyle = '#6bbf4a'
+  for (let i = -2; i <= 2; i++) {
+    ctx.save(); ctx.translate(0, -w * 0.14); ctx.rotate(i * 0.4)
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-w * 0.06, -w * 0.16); ctx.lineTo(w * 0.06, -w * 0.16); ctx.closePath(); ctx.fill(); ctx.restore()
+  }
+}
+
+function drawLemon(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.save()
+  ctx.rotate(-0.4)
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.ellipse(0, 0, w * 0.4, w * 0.28, 0, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'
+  ctx.beginPath()
+  ctx.ellipse(-w * 0.12, -w * 0.08, w * 0.1, w * 0.05, -0.3, 0, PI2)
+  ctx.fill()
+  // nubs
+  ctx.fillStyle = color
+  ctx.beginPath(); ctx.arc(w * 0.4, 0, w * 0.05, 0, PI2); ctx.fill()
+  ctx.beginPath(); ctx.arc(-w * 0.4, 0, w * 0.05, 0, PI2); ctx.fill()
+  ctx.restore()
+  ctx.fillStyle = '#7bbf6a'
+  ctx.beginPath()
+  ctx.ellipse(w * 0.18, -w * 0.26, w * 0.13, w * 0.06, -0.5, 0, PI2)
+  ctx.fill()
+}
+
+function drawChicken(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'
+  ctx.lineWidth = w * 0.015
+  // body
+  ctx.beginPath(); ctx.ellipse(0, w * 0.12, w * 0.34, w * 0.3, 0, 0, PI2); ctx.fill(); ctx.stroke()
+  // head
+  ctx.beginPath(); ctx.arc(0, -w * 0.22, w * 0.2, 0, PI2); ctx.fill(); ctx.stroke()
+  // comb
+  ctx.fillStyle = '#ff6b6b'
+  for (const dx of [-0.05, 0.03]) { ctx.beginPath(); ctx.arc(w * dx, -w * 0.4, w * 0.05, 0, PI2); ctx.fill() }
+  // beak
+  ctx.fillStyle = '#ffb43c'
+  ctx.beginPath(); ctx.moveTo(w * 0.18, -w * 0.22); ctx.lineTo(w * 0.34, -w * 0.19); ctx.lineTo(w * 0.18, -w * 0.14); ctx.closePath(); ctx.fill()
+  // eye
+  ctx.fillStyle = '#2a2a2a'
+  ctx.beginPath(); ctx.arc(w * 0.08, -w * 0.24, w * 0.025, 0, PI2); ctx.fill()
+  // wing
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+  ctx.beginPath(); ctx.ellipse(-w * 0.08, w * 0.12, w * 0.16, w * 0.12, 0.3, 0, PI2); ctx.stroke()
+  // feet
+  ctx.strokeStyle = '#ffb43c'
+  ctx.lineWidth = w * 0.02
+  for (const dx of [-0.1, 0.1]) { ctx.beginPath(); ctx.moveTo(w * dx, w * 0.4); ctx.lineTo(w * dx, w * 0.46); ctx.stroke() }
+}
+
+function drawPig(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+  ctx.lineWidth = w * 0.015
+  // ears
+  for (const sx of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sx * w * 0.16, -w * 0.28); ctx.lineTo(sx * w * 0.3, -w * 0.42); ctx.lineTo(sx * w * 0.28, -w * 0.2); ctx.closePath(); ctx.fill() }
+  // head
+  ctx.beginPath(); ctx.arc(0, w * 0.02, w * 0.34, 0, PI2); ctx.fill(); ctx.stroke()
+  // snout
+  ctx.fillStyle = '#f7a9c0'
+  ctx.beginPath(); ctx.ellipse(0, w * 0.12, w * 0.16, w * 0.12, 0, 0, PI2); ctx.fill()
+  ctx.fillStyle = '#c76b88'
+  for (const dx of [-0.05, 0.05]) { ctx.beginPath(); ctx.ellipse(w * dx, w * 0.12, w * 0.025, w * 0.04, 0, 0, PI2); ctx.fill() }
+  // eyes
+  ctx.fillStyle = '#2a2a2a'
+  for (const dx of [-0.13, 0.13]) { ctx.beginPath(); ctx.arc(w * dx, -w * 0.06, w * 0.03, 0, PI2); ctx.fill() }
+  // cheeks
+  ctx.fillStyle = 'rgba(255,150,170,0.5)'
+  for (const dx of [-0.22, 0.22]) { ctx.beginPath(); ctx.arc(w * dx, w * 0.04, w * 0.05, 0, PI2); ctx.fill() }
+}
+
+function drawPlumeria(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  for (let i = 0; i < 5; i++) {
+    ctx.save()
+    ctx.rotate((i / 5) * PI2)
+    const g = ctx.createLinearGradient(0, 0, 0, -w * 0.42)
+    g.addColorStop(0, '#ffd24d')
+    g.addColorStop(0.5, color)
+    g.addColorStop(1, '#ffffff')
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.moveTo(0, 0)
+    ctx.quadraticCurveTo(w * 0.22, -w * 0.28, w * 0.05, -w * 0.44)
+    ctx.quadraticCurveTo(0, -w * 0.46, -w * 0.05, -w * 0.44)
+    ctx.quadraticCurveTo(-w * 0.12, -w * 0.3, 0, 0)
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.fillStyle = '#ffd24d'
+  ctx.beginPath(); ctx.arc(0, 0, w * 0.08, 0, PI2); ctx.fill()
+}
+
+function drawDaisy2(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  for (let i = 0; i < 9; i++) {
+    ctx.save()
+    ctx.rotate((i / 9) * PI2)
+    ctx.beginPath()
+    ctx.ellipse(0, -w * 0.28, w * 0.09, w * 0.2, 0, 0, PI2)
+    ctx.fill()
+    ctx.restore()
+  }
+  ctx.fillStyle = '#ffcf3f'
+  ctx.beginPath()
+  ctx.arc(0, 0, w * 0.15, 0, PI2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(210,150,40,0.5)'
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * PI2
+    ctx.beginPath()
+    ctx.arc(Math.cos(a) * w * 0.07, Math.sin(a) * w * 0.07, w * 0.02, 0, PI2)
+    ctx.fill()
+  }
+}
+
+function drawMiniFlower(ctx: CanvasRenderingContext2D, w: number, color: string) {
+  ctx.fillStyle = color
+  for (let i = 0; i < 5; i++) {
+    ctx.save(); ctx.rotate((i / 5) * PI2)
+    ctx.beginPath(); ctx.ellipse(0, -w * 0.24, w * 0.12, w * 0.2, 0, 0, PI2); ctx.fill(); ctx.restore()
+  }
+  ctx.fillStyle = '#ffd24d'
+  ctx.beginPath(); ctx.arc(0, 0, w * 0.11, 0, PI2); ctx.fill()
+}
+
+// ---------- Word / phrase stickers ----------
+const RAINBOW = ['#ff6b9d', '#ff9d5c', '#ffd24d', '#6bd08a', '#5ec5ff', '#b18cff']
+function drawWord(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  text: string,
+  style: 'rainbow' | 'script' | 'bubble' | 'pill' | 'block',
+  color: string,
+) {
+  const t = text || 'hello'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  if (style === 'pill') {
+    const fs = w * 0.16
+    ctx.font = `600 ${fs}px "Caveat", cursive`
+    const tw = ctx.measureText(t).width
+    const pw = Math.max(w * 0.9, tw + w * 0.3)
+    ctx.fillStyle = color
+    roundRectPath(ctx, -pw / 2, -w * 0.16, pw, w * 0.32, w * 0.16)
+    ctx.fill()
+    ctx.fillStyle = '#5a4a52'
+    ctx.fillText(t, 0, w * 0.01)
+    return
+  }
+  if (style === 'script') {
+    ctx.font = `${w * 0.34}px "Sacramento", cursive`
+    ctx.fillStyle = color
+    ctx.fillText(t, 0, 0)
+    return
+  }
+  if (style === 'bubble') {
+    ctx.font = `${w * 0.34}px "Lobster", cursive`
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = w * 0.07
+    ctx.strokeText(t, 0, 0)
+    ctx.fillStyle = color
+    ctx.fillText(t, 0, 0)
+    return
+  }
+  if (style === 'block') {
+    ctx.font = `800 ${w * 0.26}px "Bebas Neue", sans-serif`
+    ctx.fillStyle = color
+    ctx.fillText(t.toUpperCase(), 0, 0)
+    return
+  }
+  // rainbow: colour each letter
+  ctx.font = `800 ${w * 0.3}px "Gloria Hallelujah", cursive`
+  const chars = [...t]
+  const widths = chars.map((c) => ctx.measureText(c).width)
+  const total = widths.reduce((a, b) => a + b, 0)
+  let x = -total / 2
+  chars.forEach((c, i) => {
+    ctx.fillStyle = RAINBOW[i % RAINBOW.length]
+    ctx.fillText(c, x + widths[i] / 2, 0)
+    x += widths[i]
+  })
+}
+
 function drawSquiggle(ctx: CanvasRenderingContext2D, w: number, color: string) {
   ctx.strokeStyle = color
   ctx.lineWidth = w * 0.07
@@ -1096,23 +1440,43 @@ function priceTag(ctx: CanvasRenderingContext2D, w: number, color: string, text?
 }
 
 export const STICKERS: StickerDef[] = [
-  // cute / scrapbook (flowers, hearts, gems, animals)
-  { id: 'blossom', label: 'Blossom', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffb6ce' },
+  // cute / scrapbook (flowers, hearts, gems, animals) — many gently animate
+  { id: 'boba', label: 'Boba tea', category: 'cute', hasColor: true, hasText: false, defaultColor: '#caa27a', anim: 'bounce' },
+  { id: 'shell', label: 'Pearl shell', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd1e0', anim: 'pulse' },
+  { id: 'plumeria', label: 'Plumeria', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffe0a3', anim: 'spin' },
+  { id: 'daisy2', label: 'Daisy', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffffff', anim: 'spin' },
+  { id: 'miniflower', label: 'Flower', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff9ec2', anim: 'wiggle' },
+  { id: 'blossom', label: 'Blossom', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffb6ce', anim: 'spin' },
   { id: 'flowerbtn', label: 'Flower button', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd1e0' },
-  { id: 'puffyheart', label: 'Puffy heart', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff6b9d' },
+  { id: 'puffyheart', label: 'Puffy heart', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff6b9d', anim: 'pulse' },
   { id: 'heartbtn', label: 'Heart button', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd24d' },
-  { id: 'gem', label: 'Gem', category: 'cute', hasColor: true, hasText: false, defaultColor: '#7ec8ff' },
-  { id: 'jewel', label: 'Jewel', category: 'cute', hasColor: true, hasText: false, defaultColor: '#c89bff' },
-  { id: 'puffystar', label: 'Puffy star', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd24d' },
+  { id: 'gem', label: 'Gem', category: 'cute', hasColor: true, hasText: false, defaultColor: '#7ec8ff', anim: 'twinkle' },
+  { id: 'jewel', label: 'Jewel', category: 'cute', hasColor: true, hasText: false, defaultColor: '#c89bff', anim: 'twinkle' },
+  { id: 'puffystar', label: 'Puffy star', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffd24d', anim: 'spin' },
   { id: 'ribbon', label: 'Ribbon bow', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff9ec2' },
-  { id: 'bunny', label: 'Bunny', category: 'cute', hasColor: true, hasText: false, defaultColor: '#fafafa' },
-  { id: 'bear', label: 'Bear', category: 'cute', hasColor: true, hasText: false, defaultColor: '#d9a86c' },
-  { id: 'cat', label: 'Cat', category: 'cute', hasColor: true, hasText: false, defaultColor: '#f4c07a' },
-  { id: 'cherry', label: 'Cherries', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff4d5e' },
+  { id: 'bunny', label: 'Bunny', category: 'cute', hasColor: true, hasText: false, defaultColor: '#fafafa', anim: 'wiggle' },
+  { id: 'bear', label: 'Bear', category: 'cute', hasColor: true, hasText: false, defaultColor: '#d9a86c', anim: 'wiggle' },
+  { id: 'cat', label: 'Cat', category: 'cute', hasColor: true, hasText: false, defaultColor: '#f4c07a', anim: 'wiggle' },
+  { id: 'chicken', label: 'Chicken', category: 'cute', hasColor: true, hasText: false, defaultColor: '#fafafa', anim: 'wiggle' },
+  { id: 'pig', label: 'Pig', category: 'cute', hasColor: true, hasText: false, defaultColor: '#f7bcd0', anim: 'bounce' },
+  { id: 'cherry', label: 'Cherries', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff4d5e', anim: 'bounce' },
+  { id: 'peach', label: 'Peach', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffc49b', anim: 'bounce' },
+  { id: 'strawberry', label: 'Strawberry', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff5b6e', anim: 'bounce' },
+  { id: 'lemon', label: 'Lemon', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ffdb4d', anim: 'wiggle' },
   { id: 'mushroom', label: 'Mushroom', category: 'cute', hasColor: true, hasText: false, defaultColor: '#ff6b6b' },
+  { id: 'candle', label: 'Candle', category: 'cute', hasColor: true, hasText: false, defaultColor: '#8fb3ff', anim: 'wiggle' },
+  { id: 'musicnote', label: 'Music', category: 'cute', hasColor: true, hasText: false, defaultColor: '#2a2a2a', anim: 'wiggle' },
+  // word / phrase stickers
+  { id: 'w_socute', label: 'so cute', category: 'words', hasColor: false, hasText: true, defaultColor: '#ff6b9d', defaultText: 'so cute', aspect: 2.2, anim: 'wiggle' },
+  { id: 'w_sweet', label: 'So Sweet', category: 'words', hasColor: true, hasText: true, defaultColor: '#e0322b', defaultText: 'So Sweet', aspect: 2.6 },
+  { id: 'w_morning', label: 'good morning', category: 'words', hasColor: true, hasText: true, defaultColor: '#2a2a2a', defaultText: 'good morning', aspect: 3, anim: 'wiggle' },
+  { id: 'w_weekend', label: 'happy weekend', category: 'words', hasColor: true, hasText: true, defaultColor: '#2a2a2a', defaultText: 'happy weekend', aspect: 2.8 },
+  { id: 'w_bestie', label: 'BESTIE', category: 'words', hasColor: true, hasText: true, defaultColor: '#b18cff', defaultText: 'BESTIE', aspect: 2.6, anim: 'pulse' },
+  { id: 'w_cart', label: 'Add to Cart', category: 'words', hasColor: true, hasText: true, defaultColor: '#f7bcd0', defaultText: 'Add to Cart', aspect: 3 },
+  { id: 'w_hi', label: 'hi bestie', category: 'words', hasColor: true, hasText: true, defaultColor: '#ff9ec2', defaultText: 'hello!', aspect: 2.4 },
   { id: 'star', label: 'Star', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffcc00' },
   { id: 'heart', label: 'Heart', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
-  { id: 'sparkle', label: 'Sparkle', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffe66d' },
+  { id: 'sparkle', label: 'Sparkle', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ffe66d', anim: 'twinkle' },
   { id: 'flower', label: 'Flower', category: 'shapes', hasColor: false, hasText: false, defaultColor: '#ff7eb6' },
   { id: 'ring', label: 'Ring', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#ff3b67' },
   { id: 'square', label: 'Square', category: 'shapes', hasColor: true, hasText: false, defaultColor: '#34c759' },
@@ -1362,6 +1726,63 @@ export function drawSticker(
       break
     case 'mushroom':
       drawMushroom(ctx, w, color)
+      break
+    case 'boba':
+      drawBoba(ctx, w, color)
+      break
+    case 'shell':
+      drawShell(ctx, w, color)
+      break
+    case 'plumeria':
+      drawPlumeria(ctx, w, color)
+      break
+    case 'daisy2':
+      drawDaisy2(ctx, w, color)
+      break
+    case 'miniflower':
+      drawMiniFlower(ctx, w, color)
+      break
+    case 'chicken':
+      drawChicken(ctx, w, color)
+      break
+    case 'pig':
+      drawPig(ctx, w, color)
+      break
+    case 'peach':
+      drawPeach(ctx, w, color)
+      break
+    case 'strawberry':
+      drawStrawberry(ctx, w, color)
+      break
+    case 'lemon':
+      drawLemon(ctx, w, color)
+      break
+    case 'candle':
+      drawCandle(ctx, w, color)
+      break
+    case 'musicnote':
+      drawMusicNote(ctx, w, color)
+      break
+    case 'w_socute':
+      drawWord(ctx, w, text ?? 'so cute', 'rainbow', color)
+      break
+    case 'w_sweet':
+      drawWord(ctx, w, text ?? 'So Sweet', 'bubble', color)
+      break
+    case 'w_morning':
+      drawWord(ctx, w, text ?? 'good morning', 'script', color)
+      break
+    case 'w_weekend':
+      drawWord(ctx, w, text ?? 'happy weekend', 'script', color)
+      break
+    case 'w_bestie':
+      drawWord(ctx, w, text ?? 'BESTIE', 'block', color)
+      break
+    case 'w_cart':
+      drawWord(ctx, w, text ?? 'Add to Cart', 'pill', color)
+      break
+    case 'w_hi':
+      drawWord(ctx, w, text ?? 'hello!', 'script', color)
       break
   }
 }

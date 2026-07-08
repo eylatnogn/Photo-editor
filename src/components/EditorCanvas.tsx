@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEditor } from '../state/editorStore'
-import { renderDocument } from '../engine/render'
+import {
+  renderComposite,
+  paintFromComposite,
+  hasAnimatedStickers,
+} from '../engine/render'
 import {
   brushRepair,
   brushClone,
@@ -191,7 +195,16 @@ export function EditorCanvas() {
     }
   }, [source])
 
-  // Re-render whenever the document, preview, or retouch layers change.
+  // Re-render whenever the document, preview, or retouch layers change. The
+  // expensive base composite is built once here; if any sticker animates, a
+  // rAF loop re-paints just the (cheap) layers on top each frame.
+  const compositeRef = useRef<{
+    canvas: HTMLCanvasElement
+    w: number
+    h: number
+    doc: EditorDocument
+  } | null>(null)
+  const rafRef = useRef(0)
   useEffect(() => {
     if (!previewSource || !canvasRef.current) return
     const flatten = activeTool === 'crop' || activeTool === 'retouch'
@@ -200,11 +213,26 @@ export function EditorCanvas() {
       : showOriginal
       ? createEmptyDocument()
       : doc
-    renderDocument(previewSource, renderDoc, canvasRef.current, {
+    const { canvas: comp, w, h } = renderComposite(previewSource, renderDoc, {
       heal: retouch.heal,
       erase: retouch.erase,
     })
+    compositeRef.current = { canvas: comp, w, h, doc: renderDoc }
+    const animate = !flatten && !showOriginal && hasAnimatedStickers(renderDoc)
+    paintFromComposite(comp, w, h, renderDoc, canvasRef.current, animate ? performance.now() : 0)
     fitCanvas()
+
+    cancelAnimationFrame(rafRef.current)
+    if (animate) {
+      const tick = () => {
+        const c = compositeRef.current
+        if (c && canvasRef.current)
+          paintFromComposite(c.canvas, c.w, c.h, c.doc, canvasRef.current, performance.now())
+        rafRef.current = requestAnimationFrame(tick)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    return () => cancelAnimationFrame(rafRef.current)
   }, [previewSource, doc, showOriginal, activeTool, retouch, retouchVersion, imgTick])
 
   // Size the canvas element (in CSS px) to fit the available stage while

@@ -23,7 +23,7 @@ import {
 } from './filters'
 import { getPreset } from './presets'
 import { getImage } from './imageCache'
-import { drawSticker } from './stickers'
+import { drawSticker, getSticker } from './stickers'
 import { composeLayout } from './layout'
 
 export type RenderSource =
@@ -117,11 +117,54 @@ function applyTransform(src: RenderSource, doc: EditorDocument): HTMLCanvasEleme
   return rotated
 }
 
+// Idle animation offset for a sticker. `time` in ms; 0 = neutral (exports).
+function applyStickerAnim(
+  ctx: CanvasRenderingContext2D,
+  anim: string,
+  phase: number,
+  time: number,
+  size: number,
+): number {
+  const s = time / 1000 + phase
+  let alpha = 1
+  switch (anim) {
+    case 'twinkle': {
+      const k = 0.5 + 0.5 * Math.sin(s * 3.2)
+      ctx.scale(0.8 + 0.35 * k, 0.8 + 0.35 * k)
+      ctx.rotate(Math.sin(s * 1.5) * 0.25)
+      alpha = 0.55 + 0.45 * k
+      break
+    }
+    case 'spin':
+      ctx.rotate(s * 0.7)
+      break
+    case 'wiggle':
+      ctx.rotate(Math.sin(s * 3) * 0.16)
+      break
+    case 'pulse': {
+      const k = 1 + 0.1 * Math.sin(s * 3.4)
+      ctx.scale(k, k)
+      break
+    }
+    case 'bounce':
+      ctx.translate(0, Math.sin(s * 3) * size * 0.06)
+      break
+  }
+  return alpha
+}
+
+function animPhase(id: string): number {
+  let h = 0
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+  return (h % 1000) / 1000 * Math.PI * 2
+}
+
 function drawLayers(
   ctx: CanvasRenderingContext2D,
   layers: Layer[],
   width: number,
   height: number,
+  time = 0,
 ) {
   // Font sizes in the data model are relative to a 1000px-wide reference.
   const scale = width / 1000
@@ -150,7 +193,10 @@ function drawLayers(
       ctx.globalAlpha = layer.opacity
       ctx.translate(layer.x * width, layer.y * height)
       if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180)
-      drawSticker(ctx, layer.sticker, layer.scale * width, layer.color, layer.text)
+      const sz = layer.scale * width
+      const anim = time > 0 ? getSticker(layer.sticker)?.anim : undefined
+      if (anim) ctx.globalAlpha *= applyStickerAnim(ctx, anim, animPhase(layer.id), time, sz)
+      drawSticker(ctx, layer.sticker, sz, layer.color, layer.text)
       ctx.restore()
     } else if (layer.type === 'draw') {
       if (layer.points.length < 1) continue
@@ -804,15 +850,14 @@ function buildBaseSource(
   return base
 }
 
-/**
- * Render the full document into `target`. Returns the output dimensions.
- */
-export function renderDocument(
+// The static part of a render: base + adjustments + textures, WITHOUT the
+// layers or frame. This is the expensive pass; the animation loop builds it
+// once and re-paints just the layers on top each frame.
+export function renderComposite(
   src: RenderSource,
   doc: EditorDocument,
-  target: HTMLCanvasElement,
   layers?: BaseLayers,
-): RenderResult {
+): { canvas: HTMLCanvasElement; w: number; h: number } {
   // A layout/collage replaces the single source with a composed canvas; the
   // rest of the pipeline (adjustments, stickers, text, frame) sits on top.
   const baseSource = doc.layout
@@ -823,7 +868,6 @@ export function renderDocument(
   const h = transformed.height
   const adj = effectiveAdjustments(doc)
 
-  // Render into a working canvas; a frame (if any) is applied afterwards.
   const work = document.createElement('canvas')
   work.width = w
   work.height = h
@@ -861,12 +905,49 @@ export function renderDocument(
   }
 
   drawTextures(ctx, doc.texture, w, h)
-  drawLayers(ctx, doc.layers, w, h)
+  return { canvas: work, w, h }
+}
 
-  // Apply frame as a final post-process (changes output dimensions).
+// Paint the document's layers (optionally animated at `time` ms) over a
+// pre-built composite, then apply the frame into `target`.
+export function paintFromComposite(
+  composite: HTMLCanvasElement,
+  w: number,
+  h: number,
+  doc: EditorDocument,
+  target: HTMLCanvasElement,
+  time = 0,
+): RenderResult {
+  const work = document.createElement('canvas')
+  work.width = w
+  work.height = h
+  const ctx = work.getContext('2d')!
+  ctx.drawImage(composite, 0, 0)
+  drawLayers(ctx, doc.layers, w, h, time)
   applyFrame(work, doc.frame, target)
-
   return { width: target.width, height: target.height }
+}
+
+/**
+ * Render the full document into `target`. Returns the output dimensions.
+ * `time` (ms) drives idle sticker animations; omit/0 for a neutral pose.
+ */
+export function renderDocument(
+  src: RenderSource,
+  doc: EditorDocument,
+  target: HTMLCanvasElement,
+  layers?: BaseLayers,
+  time = 0,
+): RenderResult {
+  const { canvas, w, h } = renderComposite(src, doc, layers)
+  return paintFromComposite(canvas, w, h, doc, target, time)
+}
+
+// True when the document has at least one sticker that idles/animates.
+export function hasAnimatedStickers(doc: EditorDocument): boolean {
+  return doc.layers.some(
+    (l) => l.type === 'sticker' && !l.hidden && !!getSticker(l.sticker)?.anim,
+  )
 }
 
 // Small deterministic PRNG so textures are stable across re-renders.
