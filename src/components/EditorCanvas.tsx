@@ -10,7 +10,8 @@ import {
   magicRemove,
 } from '../engine/retouch'
 import { hitLayer } from '../engine/layerGeometry'
-import { onImageLoad } from '../engine/imageCache'
+import { onImageLoad, primeImage } from '../engine/imageCache'
+import { slotDisplayRects } from '../engine/layout'
 import { LayerTransform } from './LayerTransform'
 import { Icon } from './ui/Icon'
 
@@ -22,7 +23,7 @@ import {
   type DrawLayer,
   type EditorDocument,
 } from '../types'
-import { uid, clamp } from '../utils'
+import { uid, clamp, loadImageFromFile } from '../utils'
 
 const PREVIEW_MAX = 1600
 
@@ -570,6 +571,7 @@ export function EditorCanvas() {
           onPointerLeave={() => setBrushCursor(null)}
         />
         {activeTool === 'crop' && <CropOverlay />}
+        {activeTool === 'layout' && <LayoutOverlay canvasRef={canvasRef} />}
         <LayerTransform canvasRef={canvasRef} />
         <CarouselGuide canvasRef={canvasRef} />
       </div>
@@ -611,6 +613,128 @@ export function EditorCanvas() {
           <Icon name="zoomIn" size={17} />
         </button>
       </div>
+    </div>
+  )
+}
+
+// Interactive slot frames for the active layout: tap an empty frame to add a
+// photo, tap a filled one to select it, and drag inside it to reposition.
+function LayoutOverlay({
+  canvasRef,
+}: {
+  canvasRef: React.RefObject<HTMLCanvasElement>
+}) {
+  const layout = useEditor((s) => s.doc.layout)
+  const selectedSlotId = useEditor((s) => s.selectedSlotId)
+  const selectSlot = useEditor((s) => s.selectSlot)
+  const fillSlot = useEditor((s) => s.fillSlot)
+  const beginLive = useEditor((s) => s.beginLive)
+  const live = useEditor((s) => s.live)
+  const endLive = useEditor((s) => s.endLive)
+  const drag = useRef<{
+    id: string
+    x: number
+    y: number
+    ox: number
+    oy: number
+    w: number
+    h: number
+  } | null>(null)
+
+  if (!layout) return null
+  const rects = slotDisplayRects(layout)
+  const pct = (v: number) => `${v * 100}%`
+
+  const addPhoto = async (id: string, file: File) => {
+    const img = await loadImageFromFile(file)
+    const c = document.createElement('canvas')
+    c.width = img.naturalWidth
+    c.height = img.naturalHeight
+    c.getContext('2d')!.drawImage(img, 0, 0)
+    const url = c.toDataURL('image/jpeg', 0.92)
+    primeImage(url, img)
+    fillSlot(id, url, img.naturalWidth / img.naturalHeight)
+  }
+
+  const onDown = (slotId: string, dr: { w: number; h: number }, hasSrc: boolean, e: React.PointerEvent) => {
+    selectSlot(slotId)
+    if (!hasSrc) return
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const slot = layout.slots.find((s) => s.id === slotId)!
+    ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
+    beginLive()
+    drag.current = {
+      id: slotId,
+      x: e.clientX,
+      y: e.clientY,
+      ox: slot.offsetX,
+      oy: slot.offsetY,
+      w: rect.width * dr.w,
+      h: rect.height * dr.h,
+    }
+  }
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current
+    if (!d) return
+    const nx = clamp(d.ox + (e.clientX - d.x) / d.w, -0.5, 0.5)
+    const ny = clamp(d.oy + (e.clientY - d.y) / d.h, -0.5, 0.5)
+    live((doc) => {
+      const sl = doc.layout?.slots.find((s) => s.id === d.id)
+      if (sl) {
+        sl.offsetX = nx
+        sl.offsetY = ny
+      }
+    })
+  }
+  const onUp = () => {
+    if (drag.current) {
+      drag.current = null
+      endLive()
+    }
+  }
+
+  return (
+    <div className="layout-overlay">
+      {rects.map((dr, i) => {
+        const slot = layout.slots[i]
+        const sel = slot.id === selectedSlotId
+        const style = { left: pct(dr.x), top: pct(dr.y), width: pct(dr.w), height: pct(dr.h) }
+        if (!slot.src) {
+          return (
+            <label
+              key={slot.id}
+              className={sel ? 'lo-slot empty sel' : 'lo-slot empty'}
+              style={style}
+              onClick={() => selectSlot(slot.id)}
+            >
+              <Icon name="photo" size={22} />
+              <span>Add photo</span>
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) addPhoto(slot.id, f)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          )
+        }
+        return (
+          <div
+            key={slot.id}
+            className={sel ? 'lo-slot filled sel' : 'lo-slot filled'}
+            style={style}
+            onPointerDown={(e) => onDown(slot.id, dr, true, e)}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+          />
+        )
+      })}
     </div>
   )
 }

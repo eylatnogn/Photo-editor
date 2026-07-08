@@ -223,6 +223,32 @@ export function createFrame(): FrameSettings {
   return { type: 'none', size: 6, color: '#ffffff' }
 }
 
+// ----- Layout / collage templates -----
+// A slot is a rectangular frame (normalized 0..1 within the layout) that holds
+// one photo, cover-fitted with a per-slot zoom + pan.
+export interface LayoutSlot {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  src: string | null // photo data URL, null = empty slot
+  naturalRatio: number // photo width / height (1 when empty)
+  zoom: number // >= 1, cover zoom inside the slot
+  offsetX: number // -0.5..0.5 pan within the slot's overflow
+  offsetY: number
+}
+
+export interface Layout {
+  template: string // template id (see engine/layout)
+  aspect: number // output width / height
+  slots: LayoutSlot[]
+  gap: number // 0..0.08, fraction of the output width
+  radius: number // 0..0.5, slot corner radius (fraction of slot min side)
+  padding: number // 0..0.08 outer margin, fraction of the output width
+  background: string // colour filling the gaps/margins
+}
+
 // A full, serializable description of an edit session.
 export interface EditorDocument {
   adjustments: Adjustments
@@ -233,6 +259,7 @@ export interface EditorDocument {
   curves: Curves
   texture: TextureSettings
   frame: FrameSettings
+  layout: Layout | null
 }
 
 export function createEmptyDocument(): EditorDocument {
@@ -245,6 +272,7 @@ export function createEmptyDocument(): EditorDocument {
     curves: createCurves(),
     texture: createTexture(),
     frame: createFrame(),
+    layout: null,
   }
 }
 
@@ -260,6 +288,7 @@ export type ToolId =
   | 'draw'
   | 'texture'
   | 'frame'
+  | 'layout'
   | 'layers'
   | 'ai'
   | 'export'

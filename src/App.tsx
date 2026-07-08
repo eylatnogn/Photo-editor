@@ -10,6 +10,7 @@ import { FiltersPanel } from './components/panels/FiltersPanel'
 import { CurvesPanel } from './components/panels/CurvesPanel'
 import { SelectiveColorPanel } from './components/panels/SelectiveColorPanel'
 import { CropPanel } from './components/panels/CropPanel'
+import { LayoutPanel } from './components/panels/LayoutPanel'
 import { RetouchPanel } from './components/panels/RetouchPanel'
 import { TexturePanel } from './components/panels/TexturePanel'
 import { FramePanel } from './components/panels/FramePanel'
@@ -34,6 +35,8 @@ function ActivePanel() {
       return <SelectiveColorPanel />
     case 'crop':
       return <CropPanel />
+    case 'layout':
+      return <LayoutPanel />
     case 'retouch':
       return <RetouchPanel />
     case 'texture':

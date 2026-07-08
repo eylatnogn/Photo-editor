@@ -1523,3 +1523,81 @@ input[type='color'] {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
 }
+
+/* ---------- Layout / collage templates ---------- */
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.tpl-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 6px;
+}
+.tpl-cell:hover {
+  color: var(--text);
+}
+.tpl-cell.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tpl-thumb {
+  display: block;
+}
+.tpl-cell > span {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+/* On-canvas slot frames */
+.layout-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.lo-slot {
+  position: absolute;
+  pointer-events: auto;
+  box-sizing: border-box;
+  border-radius: 6px;
+}
+.lo-slot.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  background: rgba(30, 34, 45, 0.35);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.lo-slot.empty:hover {
+  background: rgba(60, 70, 90, 0.45);
+}
+.lo-slot.filled {
+  cursor: grab;
+  border: 2px solid transparent;
+}
+.lo-slot.filled:active {
+  cursor: grabbing;
+}
+.lo-slot.sel {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}

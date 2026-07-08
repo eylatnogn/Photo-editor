@@ -24,6 +24,7 @@ import {
 import { getPreset } from './presets'
 import { getImage } from './imageCache'
 import { drawSticker } from './stickers'
+import { composeLayout } from './layout'
 
 export type RenderSource =
   | HTMLImageElement
@@ -812,7 +813,11 @@ export function renderDocument(
   target: HTMLCanvasElement,
   layers?: BaseLayers,
 ): RenderResult {
-  const baseSource = buildBaseSource(src, layers)
+  // A layout/collage replaces the single source with a composed canvas; the
+  // rest of the pipeline (adjustments, stickers, text, frame) sits on top.
+  const baseSource = doc.layout
+    ? composeLayout(doc.layout)
+    : buildBaseSource(src, layers)
   const transformed = applyTransform(baseSource, doc)
   const w = transformed.width
   const h = transformed.height

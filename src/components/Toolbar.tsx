@@ -8,6 +8,7 @@ export const TOOLS: Array<{ id: ToolId; icon: IconName; label: string }> = [
   { id: 'curves', icon: 'curves', label: 'Curves' },
   { id: 'selective', icon: 'color', label: 'Color' },
   { id: 'crop', icon: 'crop', label: 'Crop' },
+  { id: 'layout', icon: 'layout', label: 'Layout' },
   { id: 'retouch', icon: 'retouch', label: 'Retouch' },
   { id: 'texture', icon: 'texture', label: 'Texture' },
   { id: 'frame', icon: 'frame', label: 'Frame' },

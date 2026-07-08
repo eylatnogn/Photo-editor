@@ -1,7 +1,20 @@
 import { create } from 'zustand'
-import type { EditorDocument, Layer, ToolId } from '../types'
+import type { EditorDocument, Layer, LayoutSlot, ToolId } from '../types'
 import { createEmptyDocument } from '../types'
 import type { RenderSource } from '../engine/render'
+import { makeLayout } from '../engine/layout'
+
+// A data URL + aspect ratio for a render source, used to seed a layout's first
+// slot with the photo the user is already editing.
+function sourceToDataURL(src: RenderSource): { url: string; ratio: number } {
+  const w = src instanceof HTMLImageElement ? src.naturalWidth : src.width
+  const h = src instanceof HTMLImageElement ? src.naturalHeight : src.height
+  const c = document.createElement('canvas')
+  c.width = w
+  c.height = h
+  c.getContext('2d')!.drawImage(src as CanvasImageSource, 0, 0)
+  return { url: c.toDataURL('image/jpeg', 0.92), ratio: w / h }
+}
 
 const HISTORY_LIMIT = 60
 const RETOUCH_HISTORY_LIMIT = 30
@@ -116,6 +129,7 @@ interface EditorState {
   activeTool: ToolId
   showOriginal: boolean
   selectedLayerId: string | null
+  selectedSlotId: string | null
   panelOpen: boolean
   exportMode: 'single' | 'carousel'
   carousel: { slides: number; aspect: number; offset: number }
@@ -152,6 +166,13 @@ interface EditorState {
   commitRetouch: () => void
   clearRetouch: () => void
   setRetouchTool: (patch: Partial<RetouchSettings>) => void
+
+  // --- layout / collage ---
+  applyLayout: (templateId: string) => void
+  clearLayout: () => void
+  selectSlot: (id: string | null) => void
+  fillSlot: (id: string, src: string, naturalRatio: number) => void
+  updateSlot: (id: string, patch: Partial<LayoutSlot>) => void
 
   // --- history ---
   undo: () => void
@@ -221,6 +242,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   activeTool: 'adjust',
   showOriginal: false,
   selectedLayerId: null,
+  selectedSlotId: null,
   panelOpen: true,
   exportMode: 'single',
   carousel: { slides: 3, aspect: 4 / 5, offset: 0.5 },
@@ -248,6 +270,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       actionLog: [],
       actionRedo: [],
       selectedLayerId: null,
+      selectedSlotId: null,
       showOriginal: false,
       currentProjectId: null,
       ai: { processing: false, progress: 0, stage: '', error: null },
@@ -276,6 +299,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       actionLog: [],
       actionRedo: [],
       selectedLayerId: null,
+      selectedSlotId: null,
       showOriginal: false,
       activeTool: 'adjust',
       currentProjectId: projectId,
@@ -357,6 +381,68 @@ export const useEditor = create<EditorState>((set, get) => ({
 
   setRetouchTool: (patch) =>
     set((s) => ({ retouchTool: { ...s.retouchTool, ...patch } })),
+
+  // --- layout / collage ---
+  applyLayout: (templateId) =>
+    set((s) => {
+      const next = clone(s.doc)
+      const layout = makeLayout(templateId)
+      // Keep any photos already placed in the previous layout, in order, and
+      // seed the very first slot with the photo being edited otherwise.
+      const prevFilled = (s.doc.layout?.slots ?? []).filter((sl) => sl.src)
+      layout.slots.forEach((slot, i) => {
+        const prev = prevFilled[i]
+        if (prev) {
+          slot.src = prev.src
+          slot.naturalRatio = prev.naturalRatio
+        }
+      })
+      if (!layout.slots.some((sl) => sl.src) && s.source) {
+        const { url, ratio } = sourceToDataURL(s.source)
+        layout.slots[0].src = url
+        layout.slots[0].naturalRatio = ratio
+      }
+      // A layout owns the whole frame, so drop any prior crop/rotation.
+      next.transform = {
+        rotation: 0,
+        flipH: false,
+        flipV: false,
+        crop: { x: 0, y: 0, width: 1, height: 1 },
+      }
+      next.layout = layout
+      return { doc: next, ...pushDoc(s, s.doc), selectedSlotId: null }
+    }),
+
+  clearLayout: () =>
+    set((s) => {
+      const next = clone(s.doc)
+      next.layout = null
+      return { doc: next, ...pushDoc(s, s.doc), selectedSlotId: null }
+    }),
+
+  selectSlot: (id) => set({ selectedSlotId: id }),
+
+  fillSlot: (id, src, naturalRatio) =>
+    set((s) => {
+      const next = clone(s.doc)
+      const slot = next.layout?.slots.find((sl) => sl.id === id)
+      if (!slot) return {}
+      slot.src = src
+      slot.naturalRatio = naturalRatio
+      slot.zoom = 1
+      slot.offsetX = 0
+      slot.offsetY = 0
+      return { doc: next, ...pushDoc(s, s.doc), selectedSlotId: id }
+    }),
+
+  updateSlot: (id, patch) =>
+    set((s) => {
+      const next = clone(s.doc)
+      const slot = next.layout?.slots.find((sl) => sl.id === id)
+      if (!slot) return {}
+      Object.assign(slot, patch)
+      return { doc: next, ...pushDoc(s, s.doc) }
+    }),
 
   // --- unified history ---
   undo: () =>

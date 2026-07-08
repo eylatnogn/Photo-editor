@@ -47,6 +47,7 @@ export type IconName =
   | 'zoomOut'
   | 'sun'
   | 'moon'
+  | 'layout'
 
 interface IconProps {
   name: IconName
@@ -320,6 +321,12 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />,
+  layout: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 12h18M12 3v18" />
+    </>
+  ),
 }
 
 export function Icon({ name, size = 20, className, strokeWidth = 1.7 }: IconProps) {
